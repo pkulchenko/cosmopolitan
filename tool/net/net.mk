@@ -1,14 +1,17 @@
 #-*-mode:makefile-gmake;indent-tabs-mode:t;tab-width:8;coding:utf-8-*-┐
-#───vi: set et ft=make ts=8 tw=8 fenc=utf-8 :vi───────────────────────┘
-
+#───vi: set et ft=make ts=8 tw=8 fenc=utf-8 :vi───────────────────────┘                              
 PKGS += TOOL_NET
 
 TOOL_NET_FILES := $(wildcard tool/net/*)
 TOOL_NET_SRCS = $(filter %.c,$(TOOL_NET_FILES))
 TOOL_NET_HDRS = $(filter %.h,$(TOOL_NET_FILES))
+TOOL_NET_LUASOCK_SRCS := $(wildcard tool/net/luasocket/*.c)
 
 TOOL_NET_OBJS =							\
 	$(TOOL_NET_SRCS:%.c=o/$(MODE)/%.o)
+
+TOOL_NET_LUASOCK_OBJS =						\
+	$(TOOL_NET_LUASOCK_SRCS:%.c=o/$(MODE)/%.o)
 
 TOOL_NET_BINS =							\
 	$(TOOL_NET_COMS)					\
@@ -62,6 +65,7 @@ TOOL_NET_DEPS :=						\
 
 o/$(MODE)/tool/net/net.pkg:					\
 		$(TOOL_NET_OBJS)				\
+                $(TOOL_NET_LUASOCK_OBJS)			\
 		$(foreach x,$(TOOL_NET_DIRECTDEPS),$($(x)_A).pkg)
 
 o/$(MODE)/tool/net/%.com.dbg:					\
@@ -78,6 +82,7 @@ o/$(MODE)/tool/net/%.com.dbg:					\
 
 o/$(MODE)/tool/net/redbean.com.dbg:				\
 		$(TOOL_NET_DEPS)				\
+                $(TOOL_NET_LUASOCK_OBJS)			\
 		o/$(MODE)/tool/net/redbean.o			\
 		o/$(MODE)/tool/net/lsqlite3.o			\
 		o/$(MODE)/tool/net/net.pkg			\

@@ -8,7 +8,7 @@
 #include "timeout.h"
 #include "select.h"
 
-#include <string.h>
+#include <libc/isystem/string.h>
 
 /*=========================================================================*\
 * Internal function prototypes.

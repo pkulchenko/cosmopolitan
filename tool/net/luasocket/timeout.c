@@ -7,16 +7,12 @@
 #include "auxiliar.h"
 #include "timeout.h"
 
-#include <stdio.h>
-#include <limits.h>
-#include <float.h>
+#include <libc/isystem/stdio.h>
+#include <libc/isystem/limits.h>
+#include <libc/isystem/float.h>
 
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <time.h>
-#include <sys/time.h>
-#endif
+#include <libc/isystem/time.h>
+#include <libc/isystem/sys/time.h>
 
 /* min and max macros */
 #ifndef MIN

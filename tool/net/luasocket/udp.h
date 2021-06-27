@@ -17,7 +17,7 @@
 #include "timeout.h"
 #include "socket.h"
 
-#define UDP_DATAGRAMSIZE 8192
+#define UDP_DATAGRAMSIZE 2048 // to avoid GCC frame-larger-than check failure
 
 typedef struct t_udp_ {
     t_socket sock;

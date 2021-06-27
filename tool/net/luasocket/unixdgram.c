@@ -9,12 +9,10 @@
 #include "options.h"
 #include "unix.h"
 
-#include <string.h>
-#include <stdlib.h>
+#include <libc/isystem/string.h>
+#include <libc/isystem/stdlib.h>
 
-#include <sys/un.h>
-
-#define UNIXDGRAM_DATAGRAMSIZE 8192
+#define UNIXDGRAM_DATAGRAMSIZE 2048 // to avoid GCC frame-larger-than check failure
 
 // provide a SUN_LEN macro if sys/un.h doesn't (e.g. Android)
 #ifndef SUN_LEN

@@ -24,9 +24,8 @@
 #endif
 #endif
 
-#include "lua.h"
-#include "lauxlib.h"
-#include "compat.h"
+#include "third_party/lua/lua.h"
+#include "third_party/lua/lauxlib.h"
 
 /*-------------------------------------------------------------------------*\
 * Initializes the library.

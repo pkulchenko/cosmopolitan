@@ -11,14 +11,14 @@
 #include "socket.h"
 #include "pierror.h"
 
-#include <string.h>
-#include <signal.h>
+#include <libc/isystem/string.h>
+#include <libc/isystem/signal.h>
 
 /*-------------------------------------------------------------------------*\
 * Wait for readable/writable/connected socket with timeout
 \*-------------------------------------------------------------------------*/
 #ifndef SOCKET_SELECT
-#include <sys/poll.h>
+#include <libc/isystem/poll.h>
 
 #define WAITFD_R        POLLIN
 #define WAITFD_W        POLLOUT
@@ -380,17 +380,15 @@ void socket_setnonblocking(p_socket ps) {
 * DNS helpers
 \*-------------------------------------------------------------------------*/
 int socket_gethostbyaddr(const char *addr, socklen_t len, struct hostent **hp) {
-    *hp = gethostbyaddr(addr, len, AF_INET);
+    *hp = 0; // gethostbyaddr(addr, len, AF_INET);
     if (*hp) return IO_DONE;
-    else if (h_errno) return h_errno;
     else if (errno) return errno;
     else return IO_UNKNOWN;
 }
 
 int socket_gethostbyname(const char *addr, struct hostent **hp) {
-    *hp = gethostbyname(addr);
+    *hp = 0; // gethostbyname(addr);
     if (*hp) return IO_DONE;
-    else if (h_errno) return h_errno;
     else if (errno) return errno;
     else return IO_UNKNOWN;
 }
@@ -401,26 +399,19 @@ int socket_gethostbyname(const char *addr, struct hostent **hp) {
 \*-------------------------------------------------------------------------*/
 const char *socket_hoststrerror(int err) {
     if (err <= 0) return io_strerror(err);
-    switch (err) {
-        case HOST_NOT_FOUND: return PIE_HOST_NOT_FOUND;
-        default: return hstrerror(err);
-    }
+    return (HOST_NOT_FOUND == err) ? PIE_HOST_NOT_FOUND : strerror(err);
 }
 
 const char *socket_strerror(int err) {
     if (err <= 0) return io_strerror(err);
-    switch (err) {
-        case EADDRINUSE: return PIE_ADDRINUSE;
-        case EISCONN: return PIE_ISCONN;
-        case EACCES: return PIE_ACCESS;
-        case ECONNREFUSED: return PIE_CONNREFUSED;
-        case ECONNABORTED: return PIE_CONNABORTED;
-        case ECONNRESET: return PIE_CONNRESET;
-        case ETIMEDOUT: return PIE_TIMEDOUT;
-        default: {
-            return strerror(err);
-        }
-    }
+    if (EADDRINUSE == err) return PIE_ADDRINUSE;
+    else if (EISCONN == err) return PIE_ISCONN;
+    else if (EACCES == err) return PIE_ACCESS;
+    else if (ECONNREFUSED == err) return PIE_CONNREFUSED;
+    else if (ECONNABORTED == err) return PIE_CONNABORTED;
+    else if (ECONNRESET == err) return PIE_CONNRESET;
+    else if (ETIMEDOUT == err) return PIE_TIMEDOUT;
+    else return strerror(err);
 }
 
 const char *socket_ioerror(p_socket ps, int err) {
@@ -430,25 +421,23 @@ const char *socket_ioerror(p_socket ps, int err) {
 
 const char *socket_gaistrerror(int err) {
     if (err == 0) return NULL;
-    switch (err) {
-        case EAI_AGAIN: return PIE_AGAIN;
-        case EAI_BADFLAGS: return PIE_BADFLAGS;
+    if (EAI_AGAIN == err) return PIE_AGAIN;
+    else if (EAI_BADFLAGS == err) return PIE_BADFLAGS;
 #ifdef EAI_BADHINTS
-        case EAI_BADHINTS: return PIE_BADHINTS;
+    else if (EAI_BADHINTS == err) return PIE_BADHINTS;
 #endif
-        case EAI_FAIL: return PIE_FAIL;
-        case EAI_FAMILY: return PIE_FAMILY;
-        case EAI_MEMORY: return PIE_MEMORY;
-        case EAI_NONAME: return PIE_NONAME;
+    else if (EAI_FAIL == err) return PIE_FAIL;
+    else if (EAI_FAMILY == err) return PIE_FAMILY;
+    else if (EAI_MEMORY == err) return PIE_MEMORY;
+    else if (EAI_NONAME == err) return PIE_NONAME;
 #ifdef EAI_OVERFLOW
-        case EAI_OVERFLOW: return PIE_OVERFLOW;
+    else if (EAI_OVERFLOW == err) return PIE_OVERFLOW;
 #endif
 #ifdef EAI_PROTOCOL
-        case EAI_PROTOCOL: return PIE_PROTOCOL;
+    else if (EAI_PROTOCOL == err) return PIE_PROTOCOL;
 #endif
-        case EAI_SERVICE: return PIE_SERVICE;
-        case EAI_SOCKTYPE: return PIE_SOCKTYPE;
-        case EAI_SYSTEM: return strerror(errno);
-        default: return gai_strerror(err);
-    }
+    else if (EAI_SERVICE == err) return PIE_SERVICE;
+    else if (EAI_SOCKTYPE == err) return PIE_SOCKTYPE;
+    else if (EAI_SYSTEM == err) return strerror(errno);
+    else return gai_strerror(err);
 }

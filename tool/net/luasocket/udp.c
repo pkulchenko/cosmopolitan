@@ -10,8 +10,8 @@
 #include "options.h"
 #include "udp.h"
 
-#include <string.h>
-#include <stdlib.h>
+#include <libc/isystem/string.h>
+#include <libc/isystem/stdlib.h>
 
 /* min and max macros */
 #ifndef MIN

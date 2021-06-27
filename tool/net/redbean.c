@@ -4441,10 +4441,14 @@ static const luaL_Reg kLuaFuncs[] = {
 };
 
 extern int luaopen_lsqlite3(lua_State *);
+extern int luaopen_socket_core(lua_State *);
+extern int luaopen_mime_core(lua_State *);
 
 static const luaL_Reg kLuaLibs[] = {
     {"re", LuaRe},                   //
     {"lsqlite3", luaopen_lsqlite3},  //
+    {"socket.core", luaopen_socket_core},  //
+    {"mime.core", luaopen_mime_core},  //
 };
 
 static void LuaSetArgv(lua_State *L) {

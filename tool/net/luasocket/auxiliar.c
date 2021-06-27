@@ -4,8 +4,8 @@
 \*=========================================================================*/
 #include "luasocket.h"
 #include "auxiliar.h"
-#include <string.h>
-#include <stdio.h>
+#include <libc/isystem/string.h>
+#include <libc/isystem/stdio.h>
 
 /*-------------------------------------------------------------------------*\
 * Initializes the module

@@ -5,9 +5,9 @@
 #include "luasocket.h"
 #include "inet.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <libc/isystem/stdio.h>
+#include <libc/isystem/stdlib.h>
+#include <libc/isystem/string.h>
 
 /*=========================================================================*\
 * Internal function prototypes.
@@ -140,7 +140,8 @@ static int inet_global_toip(lua_State *L)
 int inet_optfamily(lua_State* L, int narg, const char* def)
 {
     static const char* optname[] = { "unspec", "inet", "inet6", NULL };
-    static int optvalue[] = { AF_UNSPEC, AF_INET, AF_INET6, 0 };
+    static int optvalue[] = { AF_UNSPEC, AF_INET, 0, 0 };
+    optvalue[2] = AF_INET6;
 
     return optvalue[luaL_checkoption(L, narg, def, optname)];
 }
@@ -181,15 +182,15 @@ static int inet_global_getaddrinfo(lua_State *L)
         }
         lua_pushnumber(L, i);
         lua_newtable(L);
+        if (iterator->ai_family == AF_INET6) {
+                lua_pushliteral(L, "family");
+                lua_pushliteral(L, "inet6");
+                lua_settable(L, -3);
+        } else
         switch (iterator->ai_family) {
             case AF_INET:
                 lua_pushliteral(L, "family");
                 lua_pushliteral(L, "inet");
-                lua_settable(L, -3);
-                break;
-            case AF_INET6:
-                lua_pushliteral(L, "family");
-                lua_pushliteral(L, "inet6");
                 lua_settable(L, -3);
                 break;
             case AF_UNSPEC:
@@ -258,12 +259,12 @@ int inet_meth_getpeername(lua_State *L, p_socket ps, int family)
     }
     lua_pushstring(L, name);
     lua_pushinteger(L, (int) strtol(port, (char **) NULL, 10));
-    switch (family) {
-        case AF_INET: lua_pushliteral(L, "inet"); break;
-        case AF_INET6: lua_pushliteral(L, "inet6"); break;
-        case AF_UNSPEC: lua_pushliteral(L, "unspec"); break;
-        default: lua_pushliteral(L, "unknown"); break;
-    }
+    lua_pushstring(L, (
+        family == AF_INET ? "inet" :
+        family == AF_INET6 ? "inet6" :
+        family == AF_UNSPEC ? "unspec" :
+        "unknown"
+    ));
     return 3;
 }
 
@@ -291,12 +292,12 @@ int inet_meth_getsockname(lua_State *L, p_socket ps, int family)
     }
     lua_pushstring(L, name);
     lua_pushstring(L, port);
-    switch (family) {
-        case AF_INET: lua_pushliteral(L, "inet"); break;
-        case AF_INET6: lua_pushliteral(L, "inet6"); break;
-        case AF_UNSPEC: lua_pushliteral(L, "unspec"); break;
-        default: lua_pushliteral(L, "unknown"); break;
-    }
+    lua_pushstring(L, (
+        family == AF_INET ? "inet" :
+        family == AF_INET6 ? "inet6" :
+        family == AF_UNSPEC ? "unspec" :
+        "unknown"
+    ));
     return 3;
 }
 
@@ -360,8 +361,7 @@ const char *inet_trycreate(p_socket ps, int family, int type, int protocol) {
 \*-------------------------------------------------------------------------*/
 const char *inet_trydisconnect(p_socket ps, int family, p_timeout tm)
 {
-    switch (family) {
-        case AF_INET: {
+    if (family == AF_INET) {
             struct sockaddr_in sin;
             memset((char *) &sin, 0, sizeof(sin));
             sin.sin_family = AF_UNSPEC;
@@ -369,7 +369,7 @@ const char *inet_trydisconnect(p_socket ps, int family, p_timeout tm)
             return socket_strerror(socket_connect(ps, (SA *) &sin,
                 sizeof(sin), tm));
         }
-        case AF_INET6: {
+    else if (family == AF_INET6) {
             struct sockaddr_in6 sin6;
             struct in6_addr addrany = IN6ADDR_ANY_INIT;
             memset((char *) &sin6, 0, sizeof(sin6));
@@ -378,7 +378,6 @@ const char *inet_trydisconnect(p_socket ps, int family, p_timeout tm)
             return socket_strerror(socket_connect(ps, (SA *) &sin6,
                 sizeof(sin6), tm));
         }
-    }
     return NULL;
 }
 
@@ -435,11 +434,11 @@ const char *inet_tryaccept(p_socket server, int family, p_socket client,
     p_timeout tm) {
 	socklen_t len;
 	t_sockaddr_storage addr;
-    switch (family) {
-        case AF_INET6: len = sizeof(struct sockaddr_in6); break;
-        case AF_INET: len = sizeof(struct sockaddr_in); break;
-        default: len = sizeof(addr); break;
-    }
+    len = (
+        family == AF_INET6 ? sizeof(struct sockaddr_in6) :
+        family == AF_INET ? sizeof(struct sockaddr_in) :
+        sizeof(addr)
+    );
 	return socket_strerror(socket_accept(server, client, (SA *) &addr,
         &len, tm));
 }

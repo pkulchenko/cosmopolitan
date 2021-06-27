@@ -9,31 +9,21 @@
 * BSD include files
 \*=========================================================================*/
 /* error codes */
-#include <errno.h>
+#include <libc/isystem/errno.h>
 /* close function */
-#include <unistd.h>
+#include <libc/isystem/unistd.h>
 /* fnctnl function and associated constants */
-#include <fcntl.h>
+#include <libc/isystem/fcntl.h>
 /* struct sockaddr */
-#include <sys/types.h>
+#include <libc/isystem/sys/types.h>
 /* socket function */
-#include <sys/socket.h>
+#include <libc/isystem/sys/socket.h>
 /* struct timeval */
-#include <sys/time.h>
-/* gethostbyname and gethostbyaddr functions */
-#include <netdb.h>
+#include <libc/isystem/sys/time.h>
 /* sigpipe handling */
-#include <signal.h>
+#include <libc/isystem/signal.h>
 /* IP stuff*/
-#include <netinet/in.h>
-#include <arpa/inet.h>
-/* TCP options (nagle algorithm disable) */
-#include <netinet/tcp.h>
-#include <net/if.h>
-
-#ifndef SO_REUSEPORT
-#define SO_REUSEPORT SO_REUSEADDR
-#endif
+#include <libc/isystem/arpa/inet.h>
 
 /* Some platforms use IPV6_JOIN_GROUP instead if
  * IPV6_ADD_MEMBERSHIP. The semantics are same, though. */

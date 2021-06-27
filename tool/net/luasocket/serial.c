@@ -9,8 +9,7 @@
 #include "options.h"
 #include "unix.h"
 
-#include <string.h>
-#include <sys/un.h>
+#include <libc/isystem/string.h>
 
 /*
 Reuses userdata definition from unix.h, since it is useful for all

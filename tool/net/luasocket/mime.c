@@ -4,8 +4,8 @@
 \*=========================================================================*/
 #include "luasocket.h"
 #include "mime.h"
-#include <string.h>
-#include <ctype.h>
+#include <libc/isystem/string.h>
+#include <libc/isystem/ctype.h>
 
 /*=========================================================================*\
 * Don't want to trust escape character constants

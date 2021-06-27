@@ -6,7 +6,7 @@
 #include "auxiliar.h"
 #include "options.h"
 #include "inet.h"
-#include <string.h>
+#include <libc/isystem/string.h>
 
 /*=========================================================================*\
 * Internal functions prototypes

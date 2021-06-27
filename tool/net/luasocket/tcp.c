@@ -10,7 +10,7 @@
 #include "options.h"
 #include "tcp.h"
 
-#include <string.h>
+#include <libc/isystem/string.h>
 
 /*=========================================================================*\
 * Internal function prototypes

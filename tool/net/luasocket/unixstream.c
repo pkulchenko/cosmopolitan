@@ -9,8 +9,7 @@
 #include "options.h"
 #include "unixstream.h"
 
-#include <string.h>
-#include <sys/un.h>
+#include <libc/isystem/string.h>
 
 /*=========================================================================*\
 * Internal function prototypes
