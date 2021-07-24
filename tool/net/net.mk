@@ -84,6 +84,7 @@ o/$(MODE)/tool/net/redbean.com.dbg:				\
 		$(TOOL_NET_DEPS)				\
 		o/$(MODE)/tool/net/redbean.o			\
 		o/$(MODE)/tool/net/lsqlite3.o			\
+		o/$(MODE)/tool/net/lfs.o			\
 		o/$(MODE)/tool/net/net.pkg			\
 		$(CRT)						\
 		$(APE)
@@ -207,6 +208,7 @@ o/$(MODE)/tool/net/redbean-unsecure.com.dbg:			\
 		$(TOOL_NET_DEPS)				\
 		o/$(MODE)/tool/net/redbean-unsecure.o		\
 		o/$(MODE)/tool/net/lsqlite3.o			\
+		o/$(MODE)/tool/net/lfs.o			\
 		o/$(MODE)/tool/net/net.pkg			\
 		$(CRT)						\
 		$(APE)

@@ -5256,10 +5256,12 @@ static const luaL_Reg kLuaFuncs[] = {
 };
 
 extern int luaopen_lsqlite3(lua_State *);
+extern int luaopen_lfs(lua_State *);
 
 static const luaL_Reg kLuaLibs[] = {
     {"re", LuaRe},                   //
     {"lsqlite3", luaopen_lsqlite3},  //
+    {"lfs", luaopen_lfs},  //
 };
 
 static void LuaSetArgv(lua_State *L) {
