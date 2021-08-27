@@ -1795,11 +1795,11 @@ static void IndexAssets(void) {
   struct Asset *p;
   struct timespec lm;
   uint32_t i, n, m, step, hash;
-  DEBUGF("(zip) indexing assets (inode %#lx)", zst.st_ino);
   CHECK_GE(HASH_LOAD_FACTOR, 2);
   CHECK(READ32LE(zcdir) == kZipCdir64HdrMagic ||
         READ32LE(zcdir) == kZipCdirHdrMagic);
   n = GetZipCdirRecords(zcdir);
+  DEBUGF("(zip) indexing %ld assets (inode %#lx)", n, zst.st_ino);
   m = roundup2pow(MAX(1, n) * HASH_LOAD_FACTOR);
   p = xcalloc(m, sizeof(struct Asset));
   for (cf = GetZipCdirOffset(zcdir); n--; cf += ZIP_CFILE_HDRSIZE(zbase + cf)) {
@@ -1818,6 +1818,8 @@ static void IndexAssets(void) {
       ++step;
     } while (p[i].hash);
     GetZipCfileTimestamps(zbase + cf, &lm, 0, 0, gmtoff);
+    NOISEF("(zip) indexed %`'.*s with hash %#lx",
+           ZIP_CFILE_NAMESIZE(zbase + cf), ZIP_CFILE_NAME(zbase + cf), hash);
     p[i].hash = hash;
     p[i].cf = cf;
     p[i].lf = GetZipCfileOffset(zbase + cf);
@@ -1836,9 +1838,11 @@ static bool OpenZip(bool force) {
   uint8_t *m, *b, *d, *p;
   if (stat(zpath, &st) != -1) {
     if (force || st.st_ino != zst.st_ino || st.st_size > zst.st_size) {
+      NOISEF("(zip) change detected: force (%s), ino (%ld != %ld) or size (%ld != %ld)",
+             force ? "true" : "false", st.st_ino, zst.st_ino, st.st_size, zst.st_size);
       if (st.st_ino == zst.st_ino) {
         fd = zfd;
-      } else if ((fd = open(zpath, O_RDWR)) == -1) {
+      } else if ((fd = open(zpath, O_RDONLY)) == -1) {
         WARNF("(zip) open() failed w/ %m");
         return false;
       }
@@ -1859,6 +1863,8 @@ static bool OpenZip(bool force) {
           zbase = b;
           zsize = n;
           zcdir = d;
+          DEBUGF("(zip) remapped zip: %p (map), %p (base), %p (cdir), %ld (size)",
+                 m, b, d, n);
           DCHECK(IsZipCdir32(zbase, zsize, zcdir - zbase) ||
                  IsZipCdir64(zbase, zsize, zcdir - zbase));
           memcpy(&zst, &st, sizeof(st));
@@ -3237,7 +3243,7 @@ static int LuaStoreAsset(lua_State *L) {
   }
   //////////////////////////////////////////////////////////////////////////////
   CHECK_NE(-1, fcntl(zfd, F_SETLKW, &(struct flock){F_WRLCK}));
-  OpenZip(false);
+  CHECK_NE(false, OpenZip(false));
   now = nowl();
   a = GetAsset(path, pathlen);
   mode = luaL_optinteger(L, 3, a ? GetMode(a) : 0644);
@@ -3378,7 +3384,7 @@ static int LuaStoreAsset(lua_State *L) {
   CHECK_NE(-1, WritevAll(zfd, v, 13));
   CHECK_NE(-1, fcntl(zfd, F_SETLK, &(struct flock){F_UNLCK}));
   //////////////////////////////////////////////////////////////////////////////
-  OpenZip(false);
+  CHECK_NE(false, OpenZip(false));
   free(comp);
   return 0;
 }
@@ -6755,7 +6761,7 @@ void RedBean(int argc, char *argv[]) {
   zpath = program_executable_name;
   CHECK_NE(-1, (zfd = open(zpath, O_RDONLY)));
   CHECK_NE(-1, fstat(zfd, &zst));
-  OpenZip(true);
+  CHECK_NE(false, OpenZip(true));
   RestoreApe();
   SetDefaults();
   GetOpts(argc, argv);
