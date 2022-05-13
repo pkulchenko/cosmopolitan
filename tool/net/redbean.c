@@ -6341,7 +6341,13 @@ static const struct sock_filter kSandboxOnline[] = {
     _SECCOMP_ALLOW_SYSCALL(0x02c),        // sendto
     _SECCOMP_ALLOW_SYSCALL(0x02d),        // recvfrom
     _SECCOMP_ALLOW_SYSCALL(0x036),        // setsockopt
+    BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, __NR_openat, 1, 0),
     _SECCOMP_LOG_AND_RETURN_ERRNO(1),     // EPERM
+    BPF_STMT(BPF_LD | BPF_W | BPF_ABS,
+             (offsetof(struct seccomp_data, args[0]))),
+    BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, -100, 1, 0),
+    BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_ERRNO | ENOTSUP)
+    BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_ALLOW),
 };
 
 static const struct sock_filter kSandboxOffline[] = {
