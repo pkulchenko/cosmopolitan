@@ -817,6 +817,10 @@ FUNCTIONS
           as the listening port, then the port in this string will be
           whatever number the operating system assigned.
 
+  GetServerFd() → {fd:int,...}
+          Returns file descriptors used for listening. This can be used
+          to modify socket configuration from the `OnServerStart` hook.
+
   GetDate() → seconds:int
           Returns date associated with request that's used to generate the
           Date header, which is now, give or take a second. The returned

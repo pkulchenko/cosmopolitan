@@ -4639,6 +4639,21 @@ static int LuaGetClientFd(lua_State *L) {
   return 1;
 }
 
+static int LuaGetServerFd(lua_State *L) {
+  size_t i;
+  if (!ips.n || !ports.n) {
+    lua_pushnil(L);
+    lua_pushliteral(L, "not initialized");
+    return 2;
+  }
+  lua_createtable(L, ips.n*ports.n, 0);
+  for (i = 0; i < ips.n*ports.n; ) {
+    lua_pushinteger(L, servers.p[i].fd);
+    lua_seti(L, -2, ++i);
+  }
+  return 1;
+}
+
 static int LuaIsClientUsingSsl(lua_State *L) {
   OnlyCallDuringConnection(L, "IsClientUsingSsl");
   lua_pushboolean(L, usingssl);
@@ -4989,6 +5004,7 @@ static const char *const kDontAutoComplete[] = {
     "GetRemoteAddr",             //
     "GetScheme",                 //
     "GetServerAddr",             //
+    "GetServerFd",               //
     "GetSslIdentity",            //
     "GetStatus",                 //
     "GetUrl",                    //
@@ -5093,6 +5109,7 @@ static const luaL_Reg kLuaFuncs[] = {
     {"GetRemoteAddr", LuaGetRemoteAddr},                        //
     {"GetScheme", LuaGetScheme},                                //
     {"GetServerAddr", LuaGetServerAddr},                        //
+    {"GetServerFd", LuaGetServerFd},                            //
     {"GetStatus", LuaGetStatus},                                //
     {"GetTime", LuaGetTime},                                    //
     {"GetUrl", LuaGetUrl},                                      //
