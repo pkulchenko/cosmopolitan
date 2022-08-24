@@ -1063,9 +1063,10 @@ static void LogLuaError(char *hook, char *err) {
   ERRORF("(lua) failed to run %s: %s", hook, err);
 }
 
-static bool LuaEvalCode(const char *code) {
+static bool LuaEvalCode(const char *code, const char *path) {
   lua_State *L = GL;
-  int status = luaL_loadstring(L, code);
+  int status = luaL_loadbuffer(L, code, strlen(code),
+    FreeLater(xasprintf("@%s", path)));
   if (status != LUA_OK || LuaCallWithTrace(L, 0, 0, NULL) != LUA_OK) {
     LogLuaError("lua code", lua_tostring(L, -1));
     lua_pop(L, 1);  // pop error
@@ -1076,7 +1077,7 @@ static bool LuaEvalCode(const char *code) {
 }
 
 static bool LuaEvalFile(const char *path) {
-  return LuaEvalCode(gc(xslurp(path, 0)));
+  return LuaEvalCode(gc(xslurp(path, 0)), path);
 }
 
 static bool LuaOnClientConnection(void) {
@@ -6933,7 +6934,7 @@ static void GetOpts(int argc, char *argv[]) {
         break;
 #endif
 #ifndef STATIC
-        CASE('e', LuaEvalCode(optarg));
+        CASE('e', LuaEvalCode(optarg, "/zip/.args"));
         CASE('F', LuaEvalFile(optarg));
         CASE('*', selfmodifiable = true);
         CASE('i', interpretermode = true);
