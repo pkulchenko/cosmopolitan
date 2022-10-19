@@ -2114,6 +2114,12 @@ static int lsession_delete(lua_State *L) {
     return 0;
 }
 
+static int lsession_reset(lua_State *L) {
+    lsession *lses = lsqlite_checksession(L, 1);
+    sqlite3session_reset(lses->ses);
+    return 0;
+}
+
 static int lsession_gc(lua_State *L) {
     return lsession_delete(L);
 }
@@ -2550,6 +2556,7 @@ static const luaL_Reg seslib[] = {
     {"isempty",         lsession_isempty        },
     {"indirect",        lsession_indirect       },
     {"enable",          lsession_enable         },
+    {"reset",           lsession_reset          },
     {"delete",          lsession_delete         },
 
     {"__tostring",      lsession_tostring       },

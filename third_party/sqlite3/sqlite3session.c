@@ -1717,6 +1717,28 @@ static void sessionDeleteTable(sqlite3_session *pSession, SessionTable *pList) {
   }
 }
 
+void sqlite3session_reset(sqlite3_session *pSession) {
+  sqlite3 *db = pSession->db;
+
+  SessionTable *pNext;
+  SessionTable *pTab;
+
+  for (pTab = pSession->pTable; pTab; pTab = pNext) {
+    int i;
+    pNext = pTab->pNext;
+    for (i = 0; i < pTab->nChange; i++) {
+      SessionChange *p;
+      SessionChange *pNextChange;
+      for (p = pTab->apChange[i]; p; p = pNextChange) {
+        pNextChange = p->pNext;
+        sessionFree(pSession, p);
+      }
+    }
+    pTab->nEntry = pTab->nChange = 0;
+    sessionFree(pSession, pTab->apChange);
+  }
+}
+
 /*
 ** Delete a session object previously allocated using sqlite3session_create().
 */

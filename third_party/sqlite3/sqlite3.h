@@ -10054,6 +10054,7 @@ SQLITE_API int sqlite3session_create(
 ** [sqlite3session_create()] for details.
 */
 SQLITE_API void sqlite3session_delete(sqlite3_session *pSession);
+SQLITE_API void sqlite3session_reset(sqlite3_session *pSession);
 
 
 /*
