@@ -859,6 +859,7 @@ static void ProgramRedirect(int code, const char *sp, size_t sn, const char *dp,
   r.location.n = dn;
   if ((i = FindRedirect(r.path.s, r.path.n)) != -1) {
     redirects.p[i] = r;
+    VERBOSEF("(cfg) updated redirect #%d: %`'s -> %`'s", i, sp, dp);
   } else {
     i = redirects.n;
     redirects.p = xrealloc(redirects.p, (i + 1) * sizeof(*redirects.p));
@@ -872,6 +873,7 @@ static void ProgramRedirect(int code, const char *sp, size_t sn, const char *dp,
     }
     redirects.p[j] = r;
     ++redirects.n;
+    VERBOSEF("(cfg) stored redirect #%d: %`'s -> %`'s", j, sp, dp);
   }
 }
 
