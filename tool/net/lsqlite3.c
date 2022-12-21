@@ -471,7 +471,9 @@ static int dbvm_get_named_types(lua_State *L) {
 static int dbvm_bind_index(lua_State *L, sqlite3_stmt *vm, int index, int lindex) {
     switch (lua_type(L, lindex)) {
         case LUA_TSTRING:
-            return sqlite3_bind_text(vm, index, lua_tostring(L, lindex), lua_rawlen(L, lindex), SQLITE_TRANSIENT);
+            return (sqlite3_column_type(vm, index) == SQLITE_BLOB ? sqlite3_bind_blob
+                : (int (*)(sqlite3_stmt*, int, const void*, int n, void(*)(void*)))sqlite3_bind_text)
+                (vm, index, lua_tostring(L, lindex), lua_rawlen(L, lindex), SQLITE_TRANSIENT);
         case LUA_TNUMBER:
 #if LUA_VERSION_NUM > 502
             if (lua_isinteger(L, lindex))
@@ -488,7 +490,6 @@ static int dbvm_bind_index(lua_State *L, sqlite3_stmt *vm, int index, int lindex
             return SQLITE_MISUSE; /*!*/
     }
 }
-
 
 static int dbvm_bind_parameter_count(lua_State *L) {
     sdb_vm *svm = lsqlite_checkvm(L, 1);
