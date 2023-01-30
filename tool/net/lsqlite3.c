@@ -203,13 +203,15 @@ static sdb_vm *newvm(lua_State *L, sdb *db) {
 }
 
 static int cleanupvm(lua_State *L, sdb_vm *svm) {
-
     /* remove entry in database table - no harm if not present in the table */
     lua_pushlightuserdata(L, svm->db);
+    /* the db table itself may aleady be cleaned up, so check for that */
     lua_rawget(L, LUA_REGISTRYINDEX);
-    lua_pushlightuserdata(L, svm);
-    lua_pushnil(L);
-    lua_rawset(L, -3);
+    if (lua_istable(L, -1)) {
+        lua_pushlightuserdata(L, svm);
+        lua_pushnil(L);
+        lua_rawset(L, -3);
+    }
     lua_pop(L, 1);
 
     svm->columns = 0;
@@ -635,22 +637,7 @@ static int cleanupdb(lua_State *L, sdb *db) {
     int top;
     int result;
 
-    /* free associated virtual machines */
-    lua_pushlightuserdata(L, db);
-    lua_rawget(L, LUA_REGISTRYINDEX);
-
-    /* close all used handles */
-    top = lua_gettop(L);
-    lua_pushnil(L);
-    while (lua_next(L, -2)) {
-        sdb_vm *svm = lua_touserdata(L, -2); /* key: vm; val: sql text */
-        cleanupvm(L, svm);
-
-        lua_settop(L, top);
-        lua_pushnil(L);
-    }
-
-    lua_pop(L, 1); /* pop vm table */
+    if (!db->db) return SQLITE_MISUSE;
 
     /* remove entry in lua registry table */
     lua_pushlightuserdata(L, db);
@@ -669,8 +656,9 @@ static int cleanupdb(lua_State *L, sdb *db) {
     luaL_unref(L, LUA_REGISTRYINDEX, db->rollback_hook_cb);
     luaL_unref(L, LUA_REGISTRYINDEX, db->rollback_hook_udata);
 
-    /* close database */
-    result = sqlite3_close(db->db);
+    /* close database; _v2 is intended for use with garbage collected languages
+       and where the order in which destructors are called is arbitrary. */
+    result = sqlite3_close_v2(db->db);
     db->db = NULL;
 
     /* free associated memory with created functions */
@@ -1753,8 +1741,7 @@ static int db_close_vm(lua_State *L) {
     while (lua_next(L, -2)) {
         sdb_vm *svm = lua_touserdata(L, -2); /* key: vm; val: sql text */
 
-        if ((!temp || svm->temp) && svm->vm)
-        {
+        if ((!temp || svm->temp) && svm->vm) {
             sqlite3_finalize(svm->vm);
             svm->vm = NULL;
         }
