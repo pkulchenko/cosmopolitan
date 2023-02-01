@@ -631,6 +631,21 @@ static sdb *newdb (lua_State *L) {
     return db;
 }
 
+/* cleanup all vms or just temporary ones */
+static void closevms(lua_State *L, sdb *db, int temp) {
+    /* free associated virtual machines */
+    lua_pushlightuserdata(L, db);
+    lua_rawget(L, LUA_REGISTRYINDEX);
+
+    /* close all used handles */
+    lua_pushnil(L);
+    while (lua_next(L, -2)) {
+        sdb_vm *svm = lua_touserdata(L, -2); /* key: vm; val: sql text */
+        if ((!temp || svm->temp)) lua_pop(L, cleanupvm(L, svm));
+        lua_pop(L, 1); /* leave key in the stack */
+    }
+}
+
 static int cleanupdb(lua_State *L, sdb *db) {
     sdb_func *func;
     sdb_func *func_next;
@@ -638,6 +653,8 @@ static int cleanupdb(lua_State *L, sdb *db) {
     int result;
 
     if (!db->db) return SQLITE_MISUSE;
+
+    closevms(L, db, 0);
 
     /* remove entry in lua registry table */
     lua_pushlightuserdata(L, db);
@@ -1729,26 +1746,7 @@ static int db_close(lua_State *L) {
 
 static int db_close_vm(lua_State *L) {
     sdb *db = lsqlite_checkdb(L, 1);
-    /* cleanup temporary only tables? */
-    int temp = lua_toboolean(L, 2);
-
-    /* free associated virtual machines */
-    lua_pushlightuserdata(L, db);
-    lua_rawget(L, LUA_REGISTRYINDEX);
-
-    /* close all used handles */
-    lua_pushnil(L);
-    while (lua_next(L, -2)) {
-        sdb_vm *svm = lua_touserdata(L, -2); /* key: vm; val: sql text */
-
-        if ((!temp || svm->temp) && svm->vm) {
-            sqlite3_finalize(svm->vm);
-            svm->vm = NULL;
-        }
-
-        /* leave key in the stack */
-        lua_pop(L, 1);
-    }
+    closevms(L, db, lua_toboolean(L, 2));
     return 0;
 }
 
