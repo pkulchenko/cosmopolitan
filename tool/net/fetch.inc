@@ -24,6 +24,8 @@ static int LuaFetch(lua_State *L) {
   struct HttpMessage msg;  // shadowing intentional
   struct HttpUnchunker u;
   const char *urlarg, *body, *method;
+  mbedtls_ssl_session session;
+  const unsigned char *sessbuf = 0;
   char *conlenhdr = "";
   char *headers = 0;
   char *hosthdr = 0;
@@ -31,7 +33,7 @@ static int LuaFetch(lua_State *L) {
   char *agenthdr = brand;
   char *key, *val, *hdr;
   size_t keylen, vallen;
-  size_t urlarglen, requestlen, paylen, bodylen;
+  size_t urlarglen, requestlen, paylen, bodylen, sesslen;
   size_t i, g, n, hdrsize;
   int keepalive = kaNONE;
   int imethod, numredirects = 0, maxredirects = 5;
@@ -151,7 +153,6 @@ static int LuaFetch(lua_State *L) {
   }
 
 #ifndef UNSECURE
-  if (usingssl) keepalive = kaNONE;
   if (usingssl && !sslinitialized) TlsInit();
 #endif
 
@@ -185,11 +186,20 @@ static int LuaFetch(lua_State *L) {
     if (lua_isinteger(L, -1)) {
       sock = lua_tointeger(L, -1);
       keepalive = lua_toboolean(L, -2) ? kaCLOSE : kaKEEP;
+      if (lua_rawgeti(L, -3, sock) == LUA_TSTRING) {
+        val = lua_tolstring(L, -1, &sesslen);
+        sessbuf = memcpy(_gc(xmalloc(sesslen)), val, sesslen);
+      }
+#ifndef UNSECURE
+      // if SSL is used, but no session is provided, open a new one
+      else if (usingssl) keepalive = kaOPEN;
+#endif
+      lua_pop(L, 1);
       // remove host mapping, as the socket is ether being closed
       // (so needs to be removed) or will be added after the request is done;
       // this also helps to keep the mapping clean in case of an error
       lua_pushnil(L); // aft: -4=tbl, -3=close, -2=hosthdr, -1=nil
-      lua_setfield(L, -4, hosthdr);
+      lua_setfield(L, -4, hosthdr); // aft: -3=tbl, -2=close, -1=hosthdr
       VERBOSEF("(ftch) reuse socket %d for host %s (and %s)",
                sock, hosthdr, keepalive == kaCLOSE ? "close" : "keep");
     }
@@ -257,8 +267,18 @@ static int LuaFetch(lua_State *L) {
 
 #ifndef UNSECURE
   if (usingssl) {
+    mbedtls_debug_set_threshold(4);
     if (sslcliused) {
       mbedtls_ssl_session_reset(&sslcli);
+
+      // restore session if available; otherwise, it is kaOPEN
+      if (sessbuf && (keepalive == kaKEEP || keepalive == kaCLOSE)) {
+        mbedtls_ssl_session_init(&session);
+        if ((ret = mbedtls_ssl_session_load(&session, sessbuf, sesslen)) ||
+            (ret = mbedtls_ssl_set_session(&sslcli, &session)))
+          WARNF("(ftch) ssl error restoring session (-0x%04x)", -ret);
+        mbedtls_ssl_session_free(&session);
+      }
     } else {
       ReseedRng(&rngcli, "child");
     }
@@ -276,6 +296,7 @@ static int LuaFetch(lua_State *L) {
     while ((ret = mbedtls_ssl_handshake(&sslcli))) {
       switch (ret) {
         case MBEDTLS_ERR_SSL_WANT_READ:
+        case MBEDTLS_ERR_SSL_WANT_WRITE:
           break;
         case MBEDTLS_ERR_X509_CERT_VERIFY_FAILED:
           goto VerifyFailed;
@@ -332,6 +353,10 @@ static int LuaFetch(lua_State *L) {
       if ((rc = mbedtls_ssl_read(&sslcli, inbuf.p + inbuf.n,
                                  inbuf.c - inbuf.n)) < 0) {
         if (rc == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
+          if (keepalive && keepalive != kaCLOSE) {
+            VERBOSEF("(ftch) close ssl keepalive on server request");
+            keepalive = kaCLOSE;
+          }
           rc = 0;
         } else {
           close(sock);
@@ -464,6 +489,21 @@ Finished:
     lua_getfield(L, 2, "keepalive");
     lua_pushinteger(L, sock);
     lua_setfield(L, -2, hosthdr);
+#ifndef UNSECURE
+    // store serialized SSL session as userdata in the sock index
+    if (usingssl) {
+      mbedtls_ssl_session_init(&session);
+      mbedtls_ssl_get_session(&sslcli, &session);
+      mbedtls_ssl_session_save(&session, NULL, 0, &sesslen);
+      sessbuf = _gc(xmalloc(sesslen));
+      if (!mbedtls_ssl_session_save(&session, sessbuf, sesslen, &sesslen))
+        lua_pushlstring(L, (const char*)sessbuf, sesslen);
+      else
+        lua_pushnil(L);
+      mbedtls_ssl_session_free(&session);
+      lua_rawseti(L, -2, sock);
+    }
+#endif
     lua_pop(L, 1);
   }
   if (followredirect && FetchHasHeader(kHttpLocation) &&
