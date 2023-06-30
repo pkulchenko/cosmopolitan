@@ -165,7 +165,7 @@ static textwindows int sys_fcntl_nt_lock(struct Fd *f, int fd, int cmd,
       for (flp = &g_locks.list, fl = *flp; fl;) {
         if (fl->fd == fd) {
           if (EqualsFileLock(fl, off, len)) {
-            if (fl->exc == l->l_type == F_WRLCK) {
+            if (fl->exc == (l->l_type == F_WRLCK)) {
               // we already have this lock
               return 0;
             } else {
@@ -224,6 +224,7 @@ static textwindows int sys_fcntl_nt_lock(struct Fd *f, int fd, int cmd,
         }
       } else {
         l->l_pid = -1;
+        // if (errno == EWOULDBLOCK) return eagain();
         ok = true;
       }
     } else if (ok) {

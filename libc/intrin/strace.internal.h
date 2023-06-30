@@ -8,7 +8,7 @@
 #define _DATATRACE  1 /* not configurable w/ flag yet */
 #define _STDIOTRACE 0 /* not configurable w/ flag yet */
 #define _LOCKTRACE  0 /* not configurable w/ flag yet */
-#define _NTTRACE    0 /* not configurable w/ flag yet */
+#define _NTTRACE    1 /* not configurable w/ flag yet */
 
 #define STRACE_PROLOGUE "%rSYS %6P %'18T "
 

@@ -101,6 +101,10 @@ o/$(MODE)/third_party/sqlite3/shell.pkg:				\
 # https://www.sqlite.org/compile.html
 THIRD_PARTY_SQLITE3_FLAGS =						\
 	-DNDEBUG							\
+	-DSQLITE_DEBUG                                                  \
+	-DSQLITE_LOCK_TRACE                                             \
+	-DSQLITE_FORCE_OS_TRACE                                         \
+	-DSQLITE_DEBUG_OS_TRACE=1                                       \
 	-DSQLITE_CORE							\
 	-DSQLITE_OS_UNIX						\
 	-DBUILD_sqlite							\

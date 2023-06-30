@@ -787,7 +787,7 @@ static const char *azFileLock(int eFileLock){
 ** turned off.
 */
 static int lockTrace(int fd, int op, struct flock *p){
-  char *zOpName, *zType;
+  char *zOpName, *zType = "";
   int s;
   int savedErrno;
   if( op==F_GETLK ){
@@ -811,8 +811,8 @@ static int lockTrace(int fd, int op, struct flock *p){
   assert( p->l_whence==SEEK_SET );
   s = osFcntl(fd, op, p);
   savedErrno = errno;
-  sqlite3DebugPrintf("fcntl %d %d %s %s %d %d %d %d\n",
-     threadid, fd, zOpName, zType, (int)p->l_start, (int)p->l_len,
+  sqlite3_log(errno, "fcntl %d %s %s %d %d %d %d",
+     fd, zOpName, zType, (int)p->l_start, (int)p->l_len,
      (int)p->l_pid, s);
   if( s==(-1) && op==F_SETLK && (p->l_type==F_RDLCK || p->l_type==F_WRLCK) ){
     struct flock l2;
@@ -1533,6 +1533,7 @@ static int unixCheckReservedLock(sqlite3_file *id, int *pResOut){
     lock.l_start = RESERVED_BYTE;
     lock.l_len = 1;
     lock.l_type = F_WRLCK;
+    unixLogError(SQLITE_NOTICE, "fcntl/checkReservedLock", pFile->zPath);
     if( osFcntl(pFile->h, F_GETLK, &lock) ){
       rc = SQLITE_IOERR_CHECKRESERVEDLOCK;
       storeLastErrno(pFile, errno);
@@ -3643,6 +3644,7 @@ static int full_fsync(int fd, int fullSync, int dataOnly){
 #elif HAVE_FULLFSYNC || defined(__COSMOPOLITAN__)
   /* [jart] use runtime os detection */
   if( fullSync && F_FULLFSYNC != -1 ){
+    unixLogError(SQLITE_NOTICE, "fcntl/fullSync", "?");
     rc = osFcntl(fd, F_FULLFSYNC, 0);
   }else{
     rc = 1;
@@ -4356,6 +4358,7 @@ static int unixFcntlExternalReader(unixFile *pFile, int *piOut){
     f.l_start = UNIX_SHM_BASE + 3;
     f.l_len = SQLITE_SHM_NLOCK - 3;
 
+    unixLogError(SQLITE_NOTICE, "fcntl/externalReader", pFile->zPath);
     sqlite3_mutex_enter(pShmNode->pShmMutex);
     if( osFcntl(pShmNode->hShm, F_GETLK, &f)<0 ){
       rc = SQLITE_IOERR_LOCK;
@@ -4534,7 +4537,9 @@ static int unixLockSharedMemory(unixFile *pDbFd, unixShmNode *pShmNode){
   lock.l_start = UNIX_SHM_DMS;
   lock.l_len = 1;
   lock.l_type = F_WRLCK;
-  if( osFcntl(pShmNode->hShm, F_GETLK, &lock)!=0 ) {
+  rc = osFcntl(pShmNode->hShm, F_GETLK, &lock);
+  unixLogError(SQLITE_NOTICE, "fcntl/lockSharedMemory", "?");
+  if( rc!=0 ) {
     rc = SQLITE_IOERR_LOCK;
   }else if( lock.l_type==F_UNLCK ){
     if( pShmNode->isReadonly ){
@@ -4550,6 +4555,9 @@ static int unixLockSharedMemory(unixFile *pDbFd, unixShmNode *pShmNode){
       if( rc==SQLITE_OK && robust_ftruncate(pShmNode->hShm, 3) ){
         rc = unixLogError(SQLITE_IOERR_SHMOPEN,"ftruncate",pShmNode->zFilename);
       }
+      //if (IsWindows() && rc==SQLITE_OK ) {
+      //  rc = unixShmSystemLock(pDbFd, F_UNLCK, UNIX_SHM_DMS, 1);
+      //}
     }
   }else if( lock.l_type==F_WRLCK ){
     rc = SQLITE_BUSY;
@@ -4714,6 +4722,7 @@ static int unixOpenSharedMemory(unixFile *pDbFd){
 
   /* Jump here on any error */
 shm_open_err:
+  //if (IsWindows()) unixShmSystemLock(pDbFd, F_UNLCK, UNIX_SHM_DMS, 1);
   unixShmPurge(pDbFd);       /* This call frees pShmNode if required */
   sqlite3_free(p);
   unixLeaveMutex();
@@ -5106,10 +5115,9 @@ static int unixShmUnmap(
   assert( pShmNode->nRef>0 );
   pShmNode->nRef--;
   if( pShmNode->nRef==0 ){
-    if( deleteFlag && pShmNode->hShm>=0 ){
-      osUnlink(pShmNode->zFilename);
-    }
+    deleteFlag = deleteFlag && pShmNode->hShm>=0;
     unixShmPurge(pDbFd);
+    if (deleteFlag) osUnlink(pShmNode->zFilename);
   }
   unixLeaveMutex();
 
