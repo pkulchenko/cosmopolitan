@@ -7326,12 +7326,12 @@ static void GetOpts(int argc, char *argv[]) {
         long ret = strtol(optarg, &p, 0);
         ProgramCache(ret, *p ? p + 1 : NULL);  // skip separator, if any
         break;
-        CASE('r', ProgramRedirectArg(307, optarg));
-        CASE('t', ProgramTimeout(ParseInt(optarg)));
-        CASE('h', PrintUsage(1, EXIT_SUCCESS));
-        CASE('M', ProgramMaxPayloadSize(ParseInt(optarg)));
+      CASE('r', ProgramRedirectArg(307, optarg));
+      CASE('t', ProgramTimeout(ParseInt(optarg)));
+      CASE('h', PrintUsage(1, EXIT_SUCCESS));
+      CASE('M', ProgramMaxPayloadSize(ParseInt(optarg)));
 #if !IsTiny()
-        CASE('W', monitortty = optarg);
+      CASE('W', monitortty = optarg);
       case 'f':
         funtrace = true;
         if (ftrace_install() == -1) {
@@ -7340,10 +7340,10 @@ static void GetOpts(int argc, char *argv[]) {
         break;
 #endif
 #ifndef STATIC
-        CASE('F', LuaEvalFile(optarg));
-        CASE('*', selfmodifiable = true);
-        CASE('i', interpretermode = true);
-        CASE('E', leakcrashreports = true);
+      CASE('F', LuaEvalFile(optarg));
+      CASE('*', selfmodifiable = true);
+      CASE('i', interpretermode = true);
+      CASE('E', leakcrashreports = true);
       case 'e':
         got_e_arg = true;
         LuaEvalCode(optarg);
@@ -7357,13 +7357,13 @@ static void GetOpts(int argc, char *argv[]) {
         break;
 #endif
 #ifndef UNSECURE
-        CASE('B', suiteb = true);
-        CASE('V', ++mbedtls_debug_threshold);
-        CASE('k', sslfetchverify = false);
-        CASE('j', sslclientverify = true);
-        CASE('T', ProgramSslTicketLifetime(ParseInt(optarg)));
-        CASE('C', ProgramFile(optarg, ProgramCertificate));
-        CASE('K', ProgramFile(optarg, ProgramPrivateKey));
+      CASE('B', suiteb = true);
+      CASE('V', ++mbedtls_debug_threshold);
+      CASE('k', sslfetchverify = false);
+      CASE('j', sslclientverify = true);
+      CASE('T', ProgramSslTicketLifetime(ParseInt(optarg)));
+      CASE('C', ProgramFile(optarg, ProgramCertificate));
+      CASE('K', ProgramFile(optarg, ProgramPrivateKey));
 #endif
       default:
         PrintUsage(2, EX_USAGE);
