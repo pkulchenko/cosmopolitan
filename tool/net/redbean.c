@@ -6923,11 +6923,11 @@ static void MakeExecutableModifiable(void) {
   if (IsNetbsd()) return;   // TODO
   if (_endswith(zpath, ".com.dbg")) return;
   close(zfd);
-  ft = ftrace_enabled(0);
+  if (!IsTiny()) ft = ftrace_enabled(0);
   if ((zfd = _OpenExecutable()) == -1) {
     WARNF("(srvr) can't open executable for modification: %m");
   }
-  if (ft > 0) {
+  if (!IsTiny() && ft > 0) {
     __ftrace = 0;
     ftrace_install();
     ftrace_enabled(ft);
