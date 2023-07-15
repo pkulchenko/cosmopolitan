@@ -7339,9 +7339,9 @@ static void GetOpts(int argc, char *argv[]) {
         }
         break;
 #endif
+      CASE('*', selfmodifiable = true);
 #ifndef STATIC
       CASE('F', LuaEvalFile(optarg));
-      CASE('*', selfmodifiable = true);
       CASE('i', interpretermode = true);
       CASE('E', leakcrashreports = true);
       case 'e':
