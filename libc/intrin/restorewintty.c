@@ -17,6 +17,7 @@
 │ PERFORMANCE OF THIS SOFTWARE.                                                │
 ╚─────────────────────────────────────────────────────────────────────────────*/
 #include "libc/dce.h"
+#include "libc/intrin/strace.internal.h"
 #include "libc/nt/console.h"
 #include "libc/nt/process.h"
 #include "libc/nt/runtime.h"
@@ -35,10 +36,11 @@ const unsigned char kConsoleHandles[3] = {
 };
 
 // Puts cmd.exe gui back the way it was.
-privileged dontinstrument void _restorewintty(void) {
+dontinstrument void _restorewintty(void) {
   if (!IsWindows()) return;
   if (__imp_GetCurrentProcessId() != __pid_exec) return;
   for (int i = 0; i < 3; ++i) {
+    STRACE("restorewintty(%d, %x)", i, __ntconsolemode[i]);
     __imp_SetConsoleMode(__imp_GetStdHandle(kConsoleHandles[i]),
                          __ntconsolemode[i]);
   }
