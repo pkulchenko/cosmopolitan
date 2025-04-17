@@ -14,7 +14,7 @@
 ** Key/Value storage engine where both keys and values must be pure
 ** text.
 */
-#include <sqliteInt.h>
+#include "third_party/sqlite3/sqliteInt.h"
 #if SQLITE_OS_KV || (SQLITE_OS_UNIX && defined(SQLITE_OS_KV_OPTIONAL))
 
 /*****************************************************************************

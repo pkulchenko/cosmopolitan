@@ -912,21 +912,18 @@ static int sqliteErrorFromPosixError(int posixError, int sqliteIOErr) {
           (sqliteIOErr == SQLITE_IOERR_UNLOCK) ||
           (sqliteIOErr == SQLITE_IOERR_RDLOCK) ||
           (sqliteIOErr == SQLITE_IOERR_CHECKRESERVEDLOCK) );
-  switch (posixError) {
-  case EACCES:
-  case EAGAIN:
-  case ETIMEDOUT:
-  case EBUSY:
-  case EINTR:
-  case ENOLCK:
+  if (posixError == EACCES
+   || posixError == EAGAIN
+   || posixError == ETIMEDOUT
+   || posixError == EBUSY
+   || posixError == EINTR
+   || posixError == ENOLCK) {
     /* random NFS retry error, unless during file system support
      * introspection, in which it actually means what it says */
     return SQLITE_BUSY;
-  
-  case EPERM:
+  } else if (posixError == EPERM) {
     return SQLITE_PERM;
-  
-  default:
+  } else {
     return sqliteIOErr;
   }
 }
@@ -3393,15 +3390,15 @@ static int unixRead(
     ** prior to returning to the application by the sqlite3ApiExit()
     ** routine.
     */
-    switch( pFile->lastErrno ){
-      case ERANGE:
-      case EIO:
+    if( pFile->lastErrno == ERANGE
+     || pFile->lastErrno == EIO
 #ifdef ENXIO
-      case ENXIO:
+     || pFile->lastErrno == ENXIO
 #endif
 #ifdef EDEVERR
-      case EDEVERR:
+     || pFile->lastErrno == EDEVERR
 #endif
+    ) {
         return SQLITE_IOERR_CORRUPTFS;
     }
     return SQLITE_IOERR_READ;
@@ -7244,12 +7241,11 @@ static int proxyCreateUnixFile(
     if( islockfile ){
       return SQLITE_BUSY;
     }
-    switch (terrno) {
-      case EACCES:
+    if (terrno == EACCES) {
         return SQLITE_PERM;
-      case EIO:
+    } else if (terrno == EIO) {
         return SQLITE_IOERR_LOCK; /* even though it is the conch */
-      default:
+    } else {
         return SQLITE_CANTOPEN_BKPT;
     }
   }
