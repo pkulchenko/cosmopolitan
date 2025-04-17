@@ -41,7 +41,7 @@
 struct PCache {
   PgHdr *pDirty, *pDirtyTail;         /* List of dirty pages in LRU order */
   PgHdr *pSynced;                     /* Last synced page in dirty page list */
-  int nRefSum;                        /* Sum of ref counts over all pages */
+  i64 nRefSum;                        /* Sum of ref counts over all pages */
   int szCache;                        /* Configured cache size */
   int szSpill;                        /* Size before spilling occurs */
   int szPage;                         /* Size of every page in this cache */
@@ -70,11 +70,15 @@ struct PCache {
     PgHdr *pPg;
     unsigned char *a;
     int j;
-    pPg = (PgHdr*)pLower->pExtra;
-    printf("%3d: nRef %2d flgs %02x data ", i, pPg->nRef, pPg->flags);
-    a = (unsigned char *)pLower->pBuf;
-    for(j=0; j<12; j++) printf("%02x", a[j]);
-    printf(" ptr %p\n", pPg);
+    if( pLower==0 ){
+      printf("%3d: NULL\n", i);
+    }else{
+      pPg = (PgHdr*)pLower->pExtra;
+      printf("%3d: nRef %2lld flgs %02x data ", i, pPg->nRef, pPg->flags);
+      a = (unsigned char *)pLower->pBuf;
+      for(j=0; j<12; j++) printf("%02x", a[j]);
+      printf(" ptr %p\n", pPg);
+    }
   }
   static void pcacheDump(PCache *pCache){
     int N;
@@ -87,9 +91,8 @@ struct PCache {
     if( N>sqlite3PcacheMxDump ) N = sqlite3PcacheMxDump;
     for(i=1; i<=N; i++){
        pLower = sqlite3GlobalConfig.pcache2.xFetch(pCache->pCache, i, 0);
-       if( pLower==0 ) continue;
        pcachePageTrace(i, pLower);
-       if( ((PgHdr*)pLower)->pPage==0 ){
+       if( pLower && ((PgHdr*)pLower)->pPage==0 ){
          sqlite3GlobalConfig.pcache2.xUnpin(pCache->pCache, pLower, 0);
        }
     }
@@ -104,7 +107,7 @@ struct PCache {
 ** Return 1 if pPg is on the dirty list for pCache.  Return 0 if not.
 ** This routine runs inside of assert() statements only.
 */
-#ifdef SQLITE_DEBUG
+#if defined(SQLITE_ENABLE_EXPENSIVE_ASSERT)
 static int pageOnDirtyList(PCache *pCache, PgHdr *pPg){
   PgHdr *p;
   for(p=pCache->pDirty; p; p=p->pDirtyNext){
@@ -112,6 +115,16 @@ static int pageOnDirtyList(PCache *pCache, PgHdr *pPg){
   }
   return 0;
 }
+static int pageNotOnDirtyList(PCache *pCache, PgHdr *pPg){
+  PgHdr *p;
+  for(p=pCache->pDirty; p; p=p->pDirtyNext){
+    if( p==pPg ) return 0;
+  }
+  return 1;
+}
+#else
+# define pageOnDirtyList(A,B)    1
+# define pageNotOnDirtyList(A,B) 1
 #endif
 
 /*
@@ -132,7 +145,7 @@ int sqlite3PcachePageSanity(PgHdr *pPg){
   assert( pCache!=0 );      /* Every page has an associated PCache */
   if( pPg->flags & PGHDR_CLEAN ){
     assert( (pPg->flags & PGHDR_DIRTY)==0 );/* Cannot be both CLEAN and DIRTY */
-    assert( !pageOnDirtyList(pCache, pPg) );/* CLEAN pages not on dirty list */
+    assert( pageNotOnDirtyList(pCache, pPg) );/* CLEAN pages not on dirtylist */
   }else{
     assert( (pPg->flags & PGHDR_DIRTY)!=0 );/* If not CLEAN must be DIRTY */
     assert( pPg->pDirtyNext==0 || pPg->pDirtyNext->pDirtyPrev==pPg );
@@ -268,7 +281,7 @@ static int numberOfCachePages(PCache *p){
     return p->szCache;
   }else{
     i64 n;
-    /* IMPLEMANTATION-OF: R-59858-46238 If the argument N is negative, then the
+    /* IMPLEMENTATION-OF: R-59858-46238 If the argument N is negative, then the
     ** number of cache pages is adjusted to be a number of pages that would
     ** use approximately abs(N*1024) bytes of memory based on the current
     ** page size. */
@@ -499,6 +512,7 @@ static SQLITE_NOINLINE PgHdr *pcacheFetchFinishWithInit(
   pPgHdr->pData = pPage->pBuf;
   pPgHdr->pExtra = (void *)&pPgHdr[1];
   memset(pPgHdr->pExtra, 0, 8);
+  assert( EIGHT_BYTE_ALIGNMENT( pPgHdr->pExtra ) );
   pPgHdr->pCache = pCache;
   pPgHdr->pgno = pgno;
   pPgHdr->flags = PGHDR_CLEAN;
@@ -756,7 +770,7 @@ static PgHdr *pcacheMergeDirtyList(PgHdr *pA, PgHdr *pB){
 }
 
 /*
-** Sort the list of pages in accending order by pgno.  Pages are
+** Sort the list of pages in ascending order by pgno.  Pages are
 ** connected by pDirty pointers.  The pDirtyPrev pointers are
 ** corrupted by this sort.
 **
@@ -815,14 +829,14 @@ PgHdr *sqlite3PcacheDirtyList(PCache *pCache){
 ** This is not the total number of pages referenced, but the sum of the
 ** reference count for all pages.
 */
-int sqlite3PcacheRefCount(PCache *pCache){
+i64 sqlite3PcacheRefCount(PCache *pCache){
   return pCache->nRefSum;
 }
 
 /*
 ** Return the number of references to the page supplied as an argument.
 */
-int sqlite3PcachePageRefcount(PgHdr *p){
+i64 sqlite3PcachePageRefcount(PgHdr *p){
   return p->nRef;
 }
 

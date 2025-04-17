@@ -37,13 +37,13 @@
 
 /* If not building as part of the core, include sqlite3ext.h. */
 #ifndef SQLITE_CORE
-# include "third_party/sqlite3/sqlite3ext.h" 
+# include "sqlite3ext.h" 
 SQLITE_EXTENSION_INIT3
 #endif
 
-#include "third_party/sqlite3/sqlite3.h"
-#include "third_party/sqlite3/fts3_tokenizer.h"
-#include "third_party/sqlite3/fts3_hash.h"
+#include "sqlite3.h"
+#include "fts3_tokenizer.h"
+#include "fts3_hash.h"
 
 /*
 ** This constant determines the maximum depth of an FTS expression tree
@@ -265,6 +265,7 @@ struct Fts3Table {
   int nPgsz;                      /* Page size for host database */
   char *zSegmentsTbl;             /* Name of %_segments table */
   sqlite3_blob *pSegments;        /* Blob handle open on %_segments table */
+  int iSavepoint;
 
   /* 
   ** The following array of hash tables is used to buffer pending index 
@@ -639,6 +640,7 @@ int sqlite3Fts3MsrIncrNext(
 int sqlite3Fts3EvalPhrasePoslist(Fts3Cursor *, Fts3Expr *, int iCol, char **); 
 int sqlite3Fts3MsrOvfl(Fts3Cursor *, Fts3MultiSegReader *, int *);
 int sqlite3Fts3MsrIncrRestart(Fts3MultiSegReader *pCsr);
+int sqlite3Fts3MsrCancel(Fts3Cursor*, Fts3Expr*);
 
 /* fts3_tokenize_vtab.c */
 int sqlite3Fts3InitTok(sqlite3*, Fts3Hash *, void(*xDestroy)(void*));
@@ -649,6 +651,10 @@ int sqlite3FtsUnicodeFold(int, int);
 int sqlite3FtsUnicodeIsalnum(int);
 int sqlite3FtsUnicodeIsdiacritic(int);
 #endif
+
+int sqlite3Fts3ExprIterate(Fts3Expr*, int (*x)(Fts3Expr*,int,void*), void*);
+
+int sqlite3Fts3IntegrityCheck(Fts3Table *p, int *pbOk);
 
 #endif /* !SQLITE_CORE || SQLITE_ENABLE_FTS3 */
 #endif /* _FTSINT_H */

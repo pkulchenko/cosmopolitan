@@ -520,8 +520,8 @@ static void schemaIsValid(Parse *pParse){
     sqlite3BtreeGetMeta(pBt, BTREE_SCHEMA_VERSION, (u32 *)&cookie);
     assert( sqlite3SchemaMutexHeld(db, iDb, 0) );
     if( cookie!=db->aDb[iDb].pSchema->schema_cookie ){
+      if( DbHasProperty(db, iDb, DB_SchemaLoaded) ) pParse->rc = SQLITE_SCHEMA;
       sqlite3ResetOneSchema(db, iDb);
-      pParse->rc = SQLITE_SCHEMA;
     }
 
     /* Close the transaction, if one was opened. */
@@ -591,8 +591,6 @@ void sqlite3ParseObjectReset(Parse *pParse){
   db->lookaside.sz = db->lookaside.bDisable ? 0 : db->lookaside.szTrue;
   assert( pParse->db->pParse==pParse );
   db->pParse = pParse->pOuterParse;
-  pParse->db = 0;
-  pParse->disableLookaside = 0;
 }
 
 /*
@@ -601,7 +599,7 @@ void sqlite3ParseObjectReset(Parse *pParse){
 ** immediately.
 **
 ** Use this mechanism for uncommon cleanups.  There is a higher setup
-** cost for this mechansim (an extra malloc), so it should not be used
+** cost for this mechanism (an extra malloc), so it should not be used
 ** for common cleanups that happen on most calls.  But for less
 ** common cleanups, we save a single NULL-pointer comparison in
 ** sqlite3ParseObjectReset(), which reduces the total CPU cycle count.
@@ -628,7 +626,13 @@ void *sqlite3ParserAddCleanup(
   void (*xCleanup)(sqlite3*,void*),   /* The cleanup routine */
   void *pPtr                          /* Pointer to object to be cleaned up */
 ){
-  ParseCleanup *pCleanup = sqlite3DbMallocRaw(pParse->db, sizeof(*pCleanup));
+  ParseCleanup *pCleanup;
+  if( sqlite3FaultSim(300) ){
+    pCleanup = 0;
+    sqlite3OomFault(pParse->db);
+  }else{
+    pCleanup = sqlite3DbMallocRaw(pParse->db, sizeof(*pCleanup));
+  }
   if( pCleanup ){
     pCleanup->pNext = pParse->pCleanup;
     pParse->pCleanup = pCleanup;
@@ -693,9 +697,18 @@ static int sqlite3Prepare(
   sParse.pOuterParse = db->pParse;
   db->pParse = &sParse;
   sParse.db = db;
-  sParse.pReprepare = pReprepare;
+  if( pReprepare ){
+    sParse.pReprepare = pReprepare;
+    sParse.explain = sqlite3_stmt_isexplain((sqlite3_stmt*)pReprepare);
+  }else{
+    assert( sParse.pReprepare==0 );
+  }
   assert( ppStmt && *ppStmt==0 );
-  if( db->mallocFailed ) sqlite3ErrorMsg(&sParse, "out of memory");
+  if( db->mallocFailed ){
+    sqlite3ErrorMsg(&sParse, "out of memory");
+    db->errCode = rc = SQLITE_NOMEM;
+    goto end_prepare;
+  }
   assert( sqlite3_mutex_held(db->mutex) );
 
   /* For a long-term use prepared statement avoid the use of
@@ -854,6 +867,7 @@ static int sqlite3LockAndPrepare(
   assert( (rc&db->errMask)==rc );
   db->busyHandler.nBusy = 0;
   sqlite3_mutex_leave(db->mutex);
+  assert( rc==SQLITE_OK || (*ppStmt)==0 );
   return rc;
 }
 
@@ -986,12 +1000,24 @@ static int sqlite3Prepare16(
   if( !sqlite3SafetyCheckOk(db)||zSql==0 ){
     return SQLITE_MISUSE_BKPT;
   }
+
+  /* Make sure nBytes is non-negative and correct.  It should be the
+  ** number of bytes until the end of the input buffer or until the first
+  ** U+0000 character.  If the input nBytes is odd, convert it into
+  ** an even number.  If the input nBytes is negative, then the input
+  ** must be terminated by at least one U+0000 character */
   if( nBytes>=0 ){
     int sz;
     const char *z = (const char*)zSql;
     for(sz=0; sz<nBytes && (z[sz]!=0 || z[sz+1]!=0); sz += 2){}
     nBytes = sz;
+  }else{
+    int sz;
+    const char *z = (const char*)zSql;
+    for(sz=0; z[sz]!=0 || z[sz+1]!=0; sz += 2){}
+    nBytes = sz;
   }
+
   sqlite3_mutex_enter(db->mutex);
   zSql8 = sqlite3Utf16to8(db, zSql, nBytes, SQLITE_UTF16NATIVE);
   if( zSql8 ){
@@ -1005,7 +1031,7 @@ static int sqlite3Prepare16(
     ** the same number of characters into the UTF-16 string.
     */
     int chars_parsed = sqlite3Utf8CharLen(zSql8, (int)(zTail8-zSql8));
-    *pzTail = (u8 *)zSql + sqlite3Utf16ByteLen(zSql, chars_parsed);
+    *pzTail = (u8 *)zSql + sqlite3Utf16ByteLen(zSql, nBytes, chars_parsed);
   }
   sqlite3DbFree(db, zSql8); 
   rc = sqlite3ApiExit(db, rc);

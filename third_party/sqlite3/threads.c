@@ -26,6 +26,9 @@
 ** single-threaded if desired.
 */
 #include "third_party/sqlite3/sqliteInt.h"
+#if SQLITE_OS_WIN
+#  include "os_win.h"
+#endif
 
 #if SQLITE_MAX_WORKER_THREADS>0
 
@@ -33,7 +36,7 @@
 #if SQLITE_OS_UNIX && defined(SQLITE_MUTEX_PTHREADS) && SQLITE_THREADSAFE>0
 
 #define SQLITE_THREADS_IMPLEMENTED 1  /* Prevent the single-thread code below */
-#include "libc/thread/thread.h"
+#include <pthread.h>
 
 /* A running thread */
 struct SQLiteThread {

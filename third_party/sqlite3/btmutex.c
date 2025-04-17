@@ -15,7 +15,7 @@
 ** big and we want to break it down some.  This packaged seemed like
 ** a good breakout.
 */
-#include "third_party/sqlite3/btreeInt.h"
+#include "btreeInt.h"
 #ifndef SQLITE_OMIT_SHARED_CACHE
 #if SQLITE_THREADSAFE
 
@@ -178,7 +178,7 @@ int sqlite3BtreeHoldsMutex(Btree *p){
 **
 ** There is a corresponding leave-all procedures.
 **
-** Enter the mutexes in accending order by BtShared pointer address
+** Enter the mutexes in ascending order by BtShared pointer address
 ** to avoid the possibility of deadlock when two threads with
 ** two or more btrees in common both try to lock all their btrees
 ** at the same instant.

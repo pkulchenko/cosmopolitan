@@ -18,7 +18,7 @@
 #ifndef SQLITE_DISABLE_FTS3_UNICODE
 #if defined(SQLITE_ENABLE_FTS3) || defined(SQLITE_ENABLE_FTS4)
 
-#include "libc/assert.h"
+#include <assert.h>
 
 /*
 ** Return true if the argument corresponds to a unicode codepoint

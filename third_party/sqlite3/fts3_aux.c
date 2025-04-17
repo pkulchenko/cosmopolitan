@@ -11,11 +11,11 @@
 ******************************************************************************
 **
 */
-#include "third_party/sqlite3/fts3Int.h"
+#include "fts3Int.h"
 #if !defined(SQLITE_CORE) || defined(SQLITE_ENABLE_FTS3)
 
-#include "libc/assert.h"
-#include "libc/str/str.h"
+#include <string.h>
+#include <assert.h>
 
 typedef struct Fts3auxTable Fts3auxTable;
 typedef struct Fts3auxCursor Fts3auxCursor;
@@ -545,7 +545,8 @@ int sqlite3Fts3InitAux(sqlite3 *db){
      0,                           /* xSavepoint    */
      0,                           /* xRelease      */
      0,                           /* xRollbackTo   */
-     0                            /* xShadowName   */
+     0,                           /* xShadowName   */
+     0                            /* xIntegrity    */
   };
   int rc;                         /* Return code */
 

@@ -28,7 +28,7 @@
 ** autoconf-based build
 */
 #if defined(_HAVE_SQLITE_CONFIG_H) && !defined(SQLITECONFIG_H)
-// #include "third_party/sqlite3/sqlite_cfg.h"
+#include "sqlite_cfg.h"
 #define SQLITECONFIG_H 1
 #endif
 
@@ -60,13 +60,13 @@ static const char * const sqlite3azCompileOpt[] = {
 #ifdef SQLITE_4_BYTE_ALIGNED_MALLOC
   "4_BYTE_ALIGNED_MALLOC",
 #endif
-#ifdef SQLITE_64BIT_STATS
-  "64BIT_STATS",
-#endif
 #ifdef SQLITE_ALLOW_COVERING_INDEX_SCAN
 # if SQLITE_ALLOW_COVERING_INDEX_SCAN != 1
   "ALLOW_COVERING_INDEX_SCAN=" CTIMEOPT_VAL(SQLITE_ALLOW_COVERING_INDEX_SCAN),
 # endif
+#endif
+#ifdef SQLITE_ALLOW_ROWID_IN_VIEW
+  "ALLOW_ROWID_IN_VIEW",
 #endif
 #ifdef SQLITE_ALLOW_URI_AUTHORITY
   "ALLOW_URI_AUTHORITY",
@@ -295,6 +295,9 @@ static const char * const sqlite3azCompileOpt[] = {
 #ifdef SQLITE_ENABLE_OFFSET_SQL_FUNC
   "ENABLE_OFFSET_SQL_FUNC",
 #endif
+#ifdef SQLITE_ENABLE_ORDERED_SET_AGGREGATES
+  "ENABLE_ORDERED_SET_AGGREGATES",
+#endif
 #ifdef SQLITE_ENABLE_OVERSIZE_CELL_CHECK
   "ENABLE_OVERSIZE_CELL_CHECK",
 #endif
@@ -358,6 +361,9 @@ static const char * const sqlite3azCompileOpt[] = {
 #ifdef SQLITE_EXPLAIN_ESTIMATED_ROWS
   "EXPLAIN_ESTIMATED_ROWS",
 #endif
+#ifdef SQLITE_EXTRA_AUTOEXT
+  "EXTRA_AUTOEXT=" CTIMEOPT_VAL(SQLITE_EXTRA_AUTOEXT),
+#endif
 #ifdef SQLITE_EXTRA_IFNULLROW
   "EXTRA_IFNULLROW",
 #endif
@@ -398,6 +404,9 @@ static const char * const sqlite3azCompileOpt[] = {
 #endif
 #ifdef SQLITE_INTEGRITY_CHECK_ERROR_MAX
   "INTEGRITY_CHECK_ERROR_MAX=" CTIMEOPT_VAL(SQLITE_INTEGRITY_CHECK_ERROR_MAX),
+#endif
+#ifdef SQLITE_LEGACY_JSON_VALID
+  "LEGACY_JSON_VALID",
 #endif
 #ifdef SQLITE_LIKE_DOESNT_MATCH_BLOBS
   "LIKE_DOESNT_MATCH_BLOBS",
@@ -636,6 +645,9 @@ static const char * const sqlite3azCompileOpt[] = {
 #ifdef SQLITE_OMIT_SCHEMA_VERSION_PRAGMAS
   "OMIT_SCHEMA_VERSION_PRAGMAS",
 #endif
+#ifdef SQLITE_OMIT_SEH
+  "OMIT_SEH",
+#endif
 #ifdef SQLITE_OMIT_SHARED_CACHE
   "OMIT_SHARED_CACHE",
 #endif
@@ -754,9 +766,6 @@ static const char * const sqlite3azCompileOpt[] = {
 #endif
 #ifdef SQLITE_UNTESTABLE
   "UNTESTABLE",
-#endif
-#ifdef SQLITE_USER_AUTHENTICATION
-  "USER_AUTHENTICATION",
 #endif
 #ifdef SQLITE_USE_ALLOCA
   "USE_ALLOCA",

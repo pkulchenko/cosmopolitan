@@ -80,17 +80,17 @@
 ** 
 */
 
-#include "libc/assert.h"
-#include "libc/stdio/stdio.h"
-#include "libc/str/str.h"
+#include <assert.h>
+#include <string.h>
+#include <stdio.h>
 
-#include "third_party/sqlite3/sqlite3.h"
+#include "sqlite3.h"
 
 #if !defined(SQLITE_CORE) || defined(SQLITE_ENABLE_RBU)
-#include "third_party/sqlite3/sqlite3rbu.h"
+#include "sqlite3rbu.h"
 
 #if defined(_WIN32_WCE)
-// #include "third_party/sqlite3/windows.h"
+#include "windows.h"
 #endif
 
 /* Maximum number of prepared UPDATE statements held by this module */
@@ -199,6 +199,7 @@ typedef unsigned int u32;
 typedef unsigned short u16;
 typedef unsigned char u8;
 typedef sqlite3_int64 i64;
+typedef sqlite3_uint64 u64;
 #endif
 
 /*
@@ -335,6 +336,27 @@ struct RbuFrame {
   u32 iWalFrame;
 };
 
+#ifndef UNUSED_PARAMETER
+/*
+** The following macros are used to suppress compiler warnings and to
+** make it clear to human readers when a function parameter is deliberately
+** left unused within the body of a function. This usually happens when
+** a function is called via a function pointer. For example the
+** implementation of an SQL aggregate step callback may not use the
+** parameter indicating the number of arguments passed to the aggregate,
+** if it knows that this is enforced elsewhere.
+**
+** When a function parameter is not used at all within the body of a function,
+** it is generally named "NotUsed" or "NotUsed2" to make things even clearer.
+** However, these macros may also be used to suppress warnings related to
+** parameters that may or may not be used depending on compilation options.
+** For example those parameters only used in assert() statements. In these
+** cases the parameters are named as per the usual conventions.
+*/
+#define UNUSED_PARAMETER(x) (void)(x)
+#define UNUSED_PARAMETER2(x,y) UNUSED_PARAMETER(x),UNUSED_PARAMETER(y)
+#endif
+
 /*
 ** RBU handle.
 **
@@ -386,7 +408,7 @@ struct sqlite3rbu {
   int rc;                         /* Value returned by last rbu_step() call */
   char *zErrmsg;                  /* Error message if rc!=SQLITE_OK */
   int nStep;                      /* Rows processed for current object */
-  int nProgress;                  /* Rows processed for all objects */
+  sqlite3_int64 nProgress;        /* Rows processed for all objects */
   RbuObjIter objiter;             /* Iterator for skipping through tbl/idx */
   const char *zVfsName;           /* Name of automatically created rbu vfs */
   rbu_file *pTargetFd;            /* File handle open on target db */
@@ -503,7 +525,7 @@ static unsigned int rbuDeltaGetInt(const char **pz, int *pLen){
      v = (v<<6) + c;
   }
   z--;
-  *pLen -= z - zStart;
+  *pLen -= (int)(z - zStart);
   *pz = (char*)z;
   return v;
 }
@@ -688,6 +710,7 @@ static void rbuFossilDeltaFunc(
   char *aOut;
 
   assert( argc==2 );
+  UNUSED_PARAMETER(argc);
 
   nOrig = sqlite3_value_bytes(argv[0]);
   aOrig = (const char*)sqlite3_value_blob(argv[0]);
@@ -885,6 +908,7 @@ static int rbuObjIterNext(sqlite3rbu *p, RbuObjIter *pIter){
         if( rc!=SQLITE_ROW ){
           rc = resetAndCollectError(pIter->pTblIter, &p->zErrmsg);
           pIter->zTbl = 0;
+          pIter->zDataTbl = 0;
         }else{
           pIter->zTbl = (const char*)sqlite3_column_text(pIter->pTblIter, 0);
           pIter->zDataTbl = (const char*)sqlite3_column_text(pIter->pTblIter,1);
@@ -2266,13 +2290,13 @@ static char *rbuObjIterGetIndexWhere(sqlite3rbu *p, RbuObjIter *pIter){
           else if( c==')' ){
             nParen--;
             if( nParen==0 ){
-              int nSpan = &zSql[i] - pIter->aIdxCol[iIdxCol].zSpan;
+              int nSpan = (int)(&zSql[i] - pIter->aIdxCol[iIdxCol].zSpan);
               pIter->aIdxCol[iIdxCol++].nSpan = nSpan;
               i++;
               break;
             }
           }else if( c==',' && nParen==1 ){
-            int nSpan = &zSql[i] - pIter->aIdxCol[iIdxCol].zSpan;
+            int nSpan = (int)(&zSql[i] - pIter->aIdxCol[iIdxCol].zSpan);
             pIter->aIdxCol[iIdxCol++].nSpan = nSpan;
             pIter->aIdxCol[iIdxCol].zSpan = &zSql[i+1];
           }else if( c=='"' || c=='\'' || c=='`' ){
@@ -2962,6 +2986,8 @@ static void rbuFileSuffix3(const char *zBase, char *z){
     for(i=sz-1; i>0 && z[i]!='/' && z[i]!='.'; i--){}
     if( z[i]=='.' && sz>i+4 ) memmove(&z[i+1], &z[sz-3], 4);
   }
+#else
+  UNUSED_PARAMETER2(zBase,z);
 #endif
 }
 
@@ -2979,7 +3005,7 @@ static i64 rbuShmChecksum(sqlite3rbu *p){
     u32 volatile *ptr;
     p->rc = pDb->pMethods->xShmMap(pDb, 0, 32*1024, 0, (void volatile**)&ptr);
     if( p->rc==SQLITE_OK ){
-      iRet = ((i64)ptr[10] << 32) + ptr[11];
+      iRet = (i64)(((u64)ptr[10] << 32) + ptr[11]);
     }
   }
   return iRet;
@@ -3031,11 +3057,11 @@ static void rbuSetupCheckpoint(sqlite3rbu *p, RbuState *pState){
   **     no-ops. These locks will not be released until the connection
   **     is closed.
   **
-  **   * Attempting to xSync() the database file causes an SQLITE_INTERNAL 
+  **   * Attempting to xSync() the database file causes an SQLITE_NOTICE 
   **     error.
   **
   ** As a result, unless an error (i.e. OOM or SQLITE_BUSY) occurs, the
-  ** checkpoint below fails with SQLITE_INTERNAL, and leaves the aFrame[]
+  ** checkpoint below fails with SQLITE_NOTICE, and leaves the aFrame[]
   ** array populated with a set of (frame -> page) mappings. Because the 
   ** WRITER, CHECKPOINT and READ0 locks are still held, it is safe to copy 
   ** data from the wal file into the database file according to the 
@@ -3045,7 +3071,7 @@ static void rbuSetupCheckpoint(sqlite3rbu *p, RbuState *pState){
     int rc2;
     p->eStage = RBU_STAGE_CAPTURE;
     rc2 = sqlite3_exec(p->dbMain, "PRAGMA main.wal_checkpoint=restart", 0, 0,0);
-    if( rc2!=SQLITE_INTERNAL ) p->rc = rc2;
+    if( rc2!=SQLITE_NOTICE ) p->rc = rc2;
   }
 
   if( p->rc==SQLITE_OK && p->nFrame>0 ){
@@ -3091,7 +3117,7 @@ static int rbuCaptureWalRead(sqlite3rbu *pRbu, i64 iOff, int iAmt){
 
   if( pRbu->mLock!=mReq ){
     pRbu->rc = SQLITE_BUSY;
-    return SQLITE_INTERNAL;
+    return SQLITE_NOTICE_RBU;
   }
 
   pRbu->pgsz = iAmt;
@@ -3141,6 +3167,11 @@ static void rbuCheckpointFrame(sqlite3rbu *p, RbuFrame *pFrame){
   p->rc = pDb->pMethods->xWrite(pDb, p->aBuf, p->pgsz, iOff);
 }
 
+/*
+** This value is copied from the definition of ZIPVFS_CTRL_FILE_POINTER
+** in zipvfs.h. 
+*/
+#define RBU_ZIPVFS_CTRL_FILE_POINTER 230439
 
 /*
 ** Take an EXCLUSIVE lock on the database file. Return SQLITE_OK if
@@ -3149,9 +3180,20 @@ static void rbuCheckpointFrame(sqlite3rbu *p, RbuFrame *pFrame){
 static int rbuLockDatabase(sqlite3 *db){
   int rc = SQLITE_OK;
   sqlite3_file *fd = 0;
-  sqlite3_file_control(db, "main", SQLITE_FCNTL_FILE_POINTER, &fd);
 
-  if( fd->pMethods ){
+  sqlite3_file_control(db, "main", RBU_ZIPVFS_CTRL_FILE_POINTER, &fd);
+  if( fd ){
+    sqlite3_file_control(db, "main", SQLITE_FCNTL_FILE_POINTER, &fd);
+    rc = fd->pMethods->xLock(fd, SQLITE_LOCK_SHARED);
+    if( rc==SQLITE_OK ){
+      rc = fd->pMethods->xUnlock(fd, SQLITE_LOCK_NONE);
+    }
+    sqlite3_file_control(db, "main", RBU_ZIPVFS_CTRL_FILE_POINTER, &fd);
+  }else{
+    sqlite3_file_control(db, "main", SQLITE_FCNTL_FILE_POINTER, &fd);
+  }
+
+  if( rc==SQLITE_OK && fd->pMethods ){
     rc = fd->pMethods->xLock(fd, SQLITE_LOCK_SHARED);
     if( rc==SQLITE_OK ){
       rc = fd->pMethods->xLock(fd, SQLITE_LOCK_EXCLUSIVE);
@@ -3530,7 +3572,7 @@ static void rbuSaveState(sqlite3rbu *p, int eStage){
           "(%d, %Q), "
           "(%d, %Q), "
           "(%d, %d), "
-          "(%d, %d), "
+          "(%d, %lld), "
           "(%d, %lld), "
           "(%d, %lld), "
           "(%d, %lld), "
@@ -3830,7 +3872,8 @@ static void rbuSetupOal(sqlite3rbu *p, RbuState *pState){
 static void rbuDeleteOalFile(sqlite3rbu *p){
   char *zOal = rbuMPrintf(p, "%s-oal", p->zTarget);
   if( zOal ){
-    sqlite3_vfs *pVfs = sqlite3_vfs_find(0);
+    sqlite3_vfs *pVfs = 0;
+    sqlite3_file_control(p->dbMain, "main", SQLITE_FCNTL_VFS_POINTER, &pVfs);
     assert( pVfs && p->rc==SQLITE_OK && p->zErrmsg==0 );
     pVfs->xDelete(pVfs, zOal, 0);
     sqlite3_free(zOal);
@@ -3887,6 +3930,7 @@ static void rbuIndexCntFunc(
   sqlite3 *db = (rbuIsVacuum(p) ? p->dbRbu : p->dbMain);
 
   assert( nVal==1 );
+  UNUSED_PARAMETER(nVal);
   
   rc = prepareFreeAndCollectError(db, &pStmt, &zErrmsg, 
       sqlite3_mprintf("SELECT count(*) FROM sqlite_schema "
@@ -4162,7 +4206,7 @@ sqlite3rbu *sqlite3rbu_vacuum(
 ){
   if( zTarget==0 ){ return rbuMisuseError(); }
   if( zState ){
-    int n = strlen(zState);
+    size_t n = strlen(zState);
     if( n>=7 && 0==memcmp("-vactmp", &zState[n-7], 7) ){
       return rbuMisuseError();
     }
@@ -4379,6 +4423,7 @@ int sqlite3rbu_savestate(sqlite3rbu *p){
 */
 static int xDefaultRename(void *pArg, const char *zOld, const char *zNew){
   int rc = SQLITE_OK;
+  UNUSED_PARAMETER(pArg);
 #if defined(_WIN32_WCE)
   {
     LPWSTR zWideOld;
@@ -4478,7 +4523,7 @@ void sqlite3rbu_rename_handler(
 **     database file are recorded. xShmLock() calls to unlock the same
 **     locks are no-ops (so that once obtained, these locks are never
 **     relinquished). Finally, calls to xSync() on the target database
-**     file fail with SQLITE_INTERNAL errors.
+**     file fail with SQLITE_NOTICE errors.
 */
 
 static void rbuUnlockShm(rbu_file *p){
@@ -4587,9 +4632,12 @@ static int rbuVfsClose(sqlite3_file *pFile){
   sqlite3_free(p->zDel);
 
   if( p->openFlags & SQLITE_OPEN_MAIN_DB ){
+    const sqlite3_io_methods *pMeth = p->pReal->pMethods;
     rbuMainlistRemove(p);
     rbuUnlockShm(p);
-    p->pReal->pMethods->xShmUnmap(p->pReal, 0);
+    if( pMeth->iVersion>1 && pMeth->xShmUnmap ){
+      pMeth->xShmUnmap(p->pReal, 0);
+    }
   }
   else if( (p->openFlags & SQLITE_OPEN_DELETEONCLOSE) && p->pRbu ){
     rbuUpdateTempSize(p, 0);
@@ -4757,7 +4805,7 @@ static int rbuVfsSync(sqlite3_file *pFile, int flags){
   rbu_file *p = (rbu_file *)pFile;
   if( p->pRbu && p->pRbu->eStage==RBU_STAGE_CAPTURE ){
     if( p->openFlags & SQLITE_OPEN_MAIN_DB ){
-      return SQLITE_INTERNAL;
+      return SQLITE_NOTICE_RBU;
     }
     return SQLITE_OK;
   }
@@ -5048,6 +5096,25 @@ static int rbuVfsOpen(
     rbuVfsShmUnmap,               /* xShmUnmap */
     0, 0                          /* xFetch, xUnfetch */
   };
+  static sqlite3_io_methods rbuvfs_io_methods1 = {
+    1,                            /* iVersion */
+    rbuVfsClose,                  /* xClose */
+    rbuVfsRead,                   /* xRead */
+    rbuVfsWrite,                  /* xWrite */
+    rbuVfsTruncate,               /* xTruncate */
+    rbuVfsSync,                   /* xSync */
+    rbuVfsFileSize,               /* xFileSize */
+    rbuVfsLock,                   /* xLock */
+    rbuVfsUnlock,                 /* xUnlock */
+    rbuVfsCheckReservedLock,      /* xCheckReservedLock */
+    rbuVfsFileControl,            /* xFileControl */
+    rbuVfsSectorSize,             /* xSectorSize */
+    rbuVfsDeviceCharacteristics,  /* xDeviceCharacteristics */
+    0, 0, 0, 0, 0, 0
+  };
+
+
+
   rbu_vfs *pRbuVfs = (rbu_vfs*)pVfs;
   sqlite3_vfs *pRealVfs = pRbuVfs->pRealVfs;
   rbu_file *pFd = (rbu_file *)pFile;
@@ -5102,10 +5169,15 @@ static int rbuVfsOpen(
     rc = pRealVfs->xOpen(pRealVfs, zOpen, pFd->pReal, oflags, pOutFlags);
   }
   if( pFd->pReal->pMethods ){
+    const sqlite3_io_methods *pMeth = pFd->pReal->pMethods;
     /* The xOpen() operation has succeeded. Set the sqlite3_file.pMethods
     ** pointer and, if the file is a main database file, link it into the
     ** mutex protected linked list of all such files.  */
-    pFile->pMethods = &rbuvfs_io_methods;
+    if( pMeth->iVersion<2 || pMeth->xShmLock==0 ){
+      pFile->pMethods = &rbuvfs_io_methods1;
+    }else{
+      pFile->pMethods = &rbuvfs_io_methods;
+    }
     if( flags & SQLITE_OPEN_MAIN_DB ){
       rbuMainlistAdd(pFd);
     }
@@ -5256,6 +5328,9 @@ static int rbuVfsCurrentTime(sqlite3_vfs *pVfs, double *pTimeOut){
 ** No-op.
 */
 static int rbuVfsGetLastError(sqlite3_vfs *pVfs, int a, char *b){
+  UNUSED_PARAMETER(pVfs);
+  UNUSED_PARAMETER(a);
+  UNUSED_PARAMETER(b);
   return 0;
 }
 

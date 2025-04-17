@@ -14,7 +14,7 @@
 ** API method and its associated functionality.
 */
 #include "third_party/sqlite3/sqliteInt.h"
-#include "third_party/sqlite3/btreeInt.h"
+#include "btreeInt.h"
 
 /* Omit this entire file if SQLITE_ENABLE_UNLOCK_NOTIFY is not defined. */
 #ifdef SQLITE_ENABLE_UNLOCK_NOTIFY
@@ -152,6 +152,9 @@ int sqlite3_unlock_notify(
 ){
   int rc = SQLITE_OK;
 
+#ifdef SQLITE_ENABLE_API_ARMOR
+  if( !sqlite3SafetyCheckOk(db) ) return SQLITE_MISUSE_BKPT;
+#endif
   sqlite3_mutex_enter(db->mutex);
   enterMutex();
 

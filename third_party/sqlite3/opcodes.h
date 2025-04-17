@@ -8,12 +8,12 @@
 #define OP_Vacuum          5
 #define OP_VFilter         6 /* jump, synopsis: iplan=r[P3] zplan='P4'     */
 #define OP_VUpdate         7 /* synopsis: data=r[P3@P2]                    */
-#define OP_Init            8 /* jump, synopsis: Start at P2                */
+#define OP_Init            8 /* jump0, synopsis: Start at P2               */
 #define OP_Goto            9 /* jump                                       */
 #define OP_Gosub          10 /* jump                                       */
-#define OP_InitCoroutine  11 /* jump                                       */
-#define OP_Yield          12 /* jump                                       */
-#define OP_MustBeInt      13 /* jump                                       */
+#define OP_InitCoroutine  11 /* jump0                                      */
+#define OP_Yield          12 /* jump0                                      */
+#define OP_MustBeInt      13 /* jump0                                      */
 #define OP_Jump           14 /* jump                                       */
 #define OP_Once           15 /* jump                                       */
 #define OP_If             16 /* jump                                       */
@@ -21,22 +21,22 @@
 #define OP_IsType         18 /* jump, synopsis: if typeof(P1.P3) in P5 goto P2 */
 #define OP_Not            19 /* same as TK_NOT, synopsis: r[P2]= !r[P1]    */
 #define OP_IfNullRow      20 /* jump, synopsis: if P1.nullRow then r[P3]=NULL, goto P2 */
-#define OP_SeekLT         21 /* jump, synopsis: key=r[P3@P4]               */
-#define OP_SeekLE         22 /* jump, synopsis: key=r[P3@P4]               */
-#define OP_SeekGE         23 /* jump, synopsis: key=r[P3@P4]               */
-#define OP_SeekGT         24 /* jump, synopsis: key=r[P3@P4]               */
+#define OP_SeekLT         21 /* jump0, synopsis: key=r[P3@P4]              */
+#define OP_SeekLE         22 /* jump0, synopsis: key=r[P3@P4]              */
+#define OP_SeekGE         23 /* jump0, synopsis: key=r[P3@P4]              */
+#define OP_SeekGT         24 /* jump0, synopsis: key=r[P3@P4]              */
 #define OP_IfNotOpen      25 /* jump, synopsis: if( !csr[P1] ) goto P2     */
 #define OP_IfNoHope       26 /* jump, synopsis: key=r[P3@P4]               */
 #define OP_NoConflict     27 /* jump, synopsis: key=r[P3@P4]               */
 #define OP_NotFound       28 /* jump, synopsis: key=r[P3@P4]               */
 #define OP_Found          29 /* jump, synopsis: key=r[P3@P4]               */
-#define OP_SeekRowid      30 /* jump, synopsis: intkey=r[P3]               */
+#define OP_SeekRowid      30 /* jump0, synopsis: intkey=r[P3]              */
 #define OP_NotExists      31 /* jump, synopsis: intkey=r[P3]               */
-#define OP_Last           32 /* jump                                       */
-#define OP_IfSmaller      33 /* jump                                       */
+#define OP_Last           32 /* jump0                                      */
+#define OP_IfSizeBetween  33 /* jump                                       */
 #define OP_SorterSort     34 /* jump                                       */
 #define OP_Sort           35 /* jump                                       */
-#define OP_Rewind         36 /* jump                                       */
+#define OP_Rewind         36 /* jump0                                      */
 #define OP_SorterNext     37 /* jump                                       */
 #define OP_Prev           38 /* jump                                       */
 #define OP_Next           39 /* jump                                       */
@@ -48,18 +48,18 @@
 #define OP_IdxGE          45 /* jump, synopsis: key=r[P3@P4]               */
 #define OP_RowSetRead     46 /* jump, synopsis: r[P3]=rowset(P1)           */
 #define OP_RowSetTest     47 /* jump, synopsis: if r[P3] in rowset(P1) goto P2 */
-#define OP_Program        48 /* jump                                       */
+#define OP_Program        48 /* jump0                                      */
 #define OP_FkIfZero       49 /* jump, synopsis: if fkctr[P1]==0 goto P2    */
-#define OP_IsNull         50 /* jump, same as TK_ISNULL, synopsis: if r[P1]==NULL goto P2 */
-#define OP_NotNull        51 /* jump, same as TK_NOTNULL, synopsis: if r[P1]!=NULL goto P2 */
-#define OP_Ne             52 /* jump, same as TK_NE, synopsis: IF r[P3]!=r[P1] */
-#define OP_Eq             53 /* jump, same as TK_EQ, synopsis: IF r[P3]==r[P1] */
-#define OP_Gt             54 /* jump, same as TK_GT, synopsis: IF r[P3]>r[P1] */
-#define OP_Le             55 /* jump, same as TK_LE, synopsis: IF r[P3]<=r[P1] */
-#define OP_Lt             56 /* jump, same as TK_LT, synopsis: IF r[P3]<r[P1] */
-#define OP_Ge             57 /* jump, same as TK_GE, synopsis: IF r[P3]>=r[P1] */
-#define OP_ElseEq         58 /* jump, same as TK_ESCAPE                    */
-#define OP_IfPos          59 /* jump, synopsis: if r[P1]>0 then r[P1]-=P3, goto P2 */
+#define OP_IfPos          50 /* jump, synopsis: if r[P1]>0 then r[P1]-=P3, goto P2 */
+#define OP_IsNull         51 /* jump, same as TK_ISNULL, synopsis: if r[P1]==NULL goto P2 */
+#define OP_NotNull        52 /* jump, same as TK_NOTNULL, synopsis: if r[P1]!=NULL goto P2 */
+#define OP_Ne             53 /* jump, same as TK_NE, synopsis: IF r[P3]!=r[P1] */
+#define OP_Eq             54 /* jump, same as TK_EQ, synopsis: IF r[P3]==r[P1] */
+#define OP_Gt             55 /* jump, same as TK_GT, synopsis: IF r[P3]>r[P1] */
+#define OP_Le             56 /* jump, same as TK_LE, synopsis: IF r[P3]<=r[P1] */
+#define OP_Lt             57 /* jump, same as TK_LT, synopsis: IF r[P3]<r[P1] */
+#define OP_Ge             58 /* jump, same as TK_GE, synopsis: IF r[P3]>=r[P1] */
+#define OP_ElseEq         59 /* jump, same as TK_ESCAPE                    */
 #define OP_IfNotZero      60 /* jump, synopsis: if r[P1]!=0 then r[P1]--, goto P2 */
 #define OP_DecrJumpZero   61 /* jump, synopsis: if (--r[P1])==0 goto P2    */
 #define OP_IncrVacuum     62 /* jump                                       */
@@ -78,7 +78,7 @@
 #define OP_Null           75 /* synopsis: r[P2..P3]=NULL                   */
 #define OP_SoftNull       76 /* synopsis: r[P1]=NULL                       */
 #define OP_Blob           77 /* synopsis: r[P2]=P4 (len=P1)                */
-#define OP_Variable       78 /* synopsis: r[P2]=parameter(P1,P4)           */
+#define OP_Variable       78 /* synopsis: r[P2]=parameter(P1)              */
 #define OP_Move           79 /* synopsis: r[P2@P3]=r[P1@P3]                */
 #define OP_Copy           80 /* synopsis: r[P2@P3+1]=r[P1@P3+1]            */
 #define OP_SCopy          81 /* synopsis: r[P2]=r[P1]                      */
@@ -102,23 +102,23 @@
 #define OP_ReadCookie     99
 #define OP_SetCookie     100
 #define OP_ReopenIdx     101 /* synopsis: root=P2 iDb=P3                   */
-#define OP_BitAnd        102 /* same as TK_BITAND, synopsis: r[P3]=r[P1]&r[P2] */
-#define OP_BitOr         103 /* same as TK_BITOR, synopsis: r[P3]=r[P1]|r[P2] */
-#define OP_ShiftLeft     104 /* same as TK_LSHIFT, synopsis: r[P3]=r[P2]<<r[P1] */
-#define OP_ShiftRight    105 /* same as TK_RSHIFT, synopsis: r[P3]=r[P2]>>r[P1] */
-#define OP_Add           106 /* same as TK_PLUS, synopsis: r[P3]=r[P1]+r[P2] */
-#define OP_Subtract      107 /* same as TK_MINUS, synopsis: r[P3]=r[P2]-r[P1] */
-#define OP_Multiply      108 /* same as TK_STAR, synopsis: r[P3]=r[P1]*r[P2] */
-#define OP_Divide        109 /* same as TK_SLASH, synopsis: r[P3]=r[P2]/r[P1] */
-#define OP_Remainder     110 /* same as TK_REM, synopsis: r[P3]=r[P2]%r[P1] */
-#define OP_Concat        111 /* same as TK_CONCAT, synopsis: r[P3]=r[P2]+r[P1] */
-#define OP_OpenRead      112 /* synopsis: root=P2 iDb=P3                   */
+#define OP_OpenRead      102 /* synopsis: root=P2 iDb=P3                   */
+#define OP_BitAnd        103 /* same as TK_BITAND, synopsis: r[P3]=r[P1]&r[P2] */
+#define OP_BitOr         104 /* same as TK_BITOR, synopsis: r[P3]=r[P1]|r[P2] */
+#define OP_ShiftLeft     105 /* same as TK_LSHIFT, synopsis: r[P3]=r[P2]<<r[P1] */
+#define OP_ShiftRight    106 /* same as TK_RSHIFT, synopsis: r[P3]=r[P2]>>r[P1] */
+#define OP_Add           107 /* same as TK_PLUS, synopsis: r[P3]=r[P1]+r[P2] */
+#define OP_Subtract      108 /* same as TK_MINUS, synopsis: r[P3]=r[P2]-r[P1] */
+#define OP_Multiply      109 /* same as TK_STAR, synopsis: r[P3]=r[P1]*r[P2] */
+#define OP_Divide        110 /* same as TK_SLASH, synopsis: r[P3]=r[P2]/r[P1] */
+#define OP_Remainder     111 /* same as TK_REM, synopsis: r[P3]=r[P2]%r[P1] */
+#define OP_Concat        112 /* same as TK_CONCAT, synopsis: r[P3]=r[P2]+r[P1] */
 #define OP_OpenWrite     113 /* synopsis: root=P2 iDb=P3                   */
-#define OP_BitNot        114 /* same as TK_BITNOT, synopsis: r[P2]= ~r[P1] */
-#define OP_OpenDup       115
+#define OP_OpenDup       114
+#define OP_BitNot        115 /* same as TK_BITNOT, synopsis: r[P2]= ~r[P1] */
 #define OP_OpenAutoindex 116 /* synopsis: nColumn=P2                       */
-#define OP_String8       117 /* same as TK_STRING, synopsis: r[P2]='P4'    */
-#define OP_OpenEphemeral 118 /* synopsis: nColumn=P2                       */
+#define OP_OpenEphemeral 117 /* synopsis: nColumn=P2                       */
+#define OP_String8       118 /* same as TK_STRING, synopsis: r[P2]='P4'    */
 #define OP_SorterOpen    119
 #define OP_SequenceTest  120 /* synopsis: if( cursor[P1].ctr++ ) pc = P2   */
 #define OP_OpenPseudo    121 /* synopsis: P3 columns in r[P2]              */
@@ -153,8 +153,8 @@
 #define OP_LoadAnalysis  150
 #define OP_DropTable     151
 #define OP_DropIndex     152
-#define OP_Real          153 /* same as TK_FLOAT, synopsis: r[P2]=P4       */
-#define OP_DropTrigger   154
+#define OP_DropTrigger   153
+#define OP_Real          154 /* same as TK_FLOAT, synopsis: r[P2]=P4       */
 #define OP_IntegrityCk   155
 #define OP_RowSetAdd     156 /* synopsis: rowset(P1)=r[P2]                 */
 #define OP_Param         157
@@ -174,19 +174,22 @@
 #define OP_VCreate       171
 #define OP_VDestroy      172
 #define OP_VOpen         173
-#define OP_VInitIn       174 /* synopsis: r[P2]=ValueList(P1,P3)           */
-#define OP_VColumn       175 /* synopsis: r[P3]=vcolumn(P2)                */
-#define OP_VRename       176
-#define OP_Pagecount     177
-#define OP_MaxPgcnt      178
-#define OP_ClrSubtype    179 /* synopsis: r[P1].subtype = 0                */
-#define OP_FilterAdd     180 /* synopsis: filter(P1) += key(P3@P4)         */
-#define OP_Trace         181
-#define OP_CursorHint    182
-#define OP_ReleaseReg    183 /* synopsis: release r[P1@P2] mask P3         */
-#define OP_Noop          184
-#define OP_Explain       185
-#define OP_Abortable     186
+#define OP_VCheck        174
+#define OP_VInitIn       175 /* synopsis: r[P2]=ValueList(P1,P3)           */
+#define OP_VColumn       176 /* synopsis: r[P3]=vcolumn(P2)                */
+#define OP_VRename       177
+#define OP_Pagecount     178
+#define OP_MaxPgcnt      179
+#define OP_ClrSubtype    180 /* synopsis: r[P1].subtype = 0                */
+#define OP_GetSubtype    181 /* synopsis: r[P2] = r[P1].subtype            */
+#define OP_SetSubtype    182 /* synopsis: r[P2].subtype = r[P1]            */
+#define OP_FilterAdd     183 /* synopsis: filter(P1) += key(P3@P4)         */
+#define OP_Trace         184
+#define OP_CursorHint    185
+#define OP_ReleaseReg    186 /* synopsis: release r[P1@P2] mask P3         */
+#define OP_Noop          187
+#define OP_Explain       188
+#define OP_Abortable     189
 
 /* Properties such as "out2" or "jump" that are specified in
 ** comments following the "case" for each opcode in the vdbe.c
@@ -198,31 +201,33 @@
 #define OPFLG_IN3         0x08  /* in3:   P3 is an input */
 #define OPFLG_OUT2        0x10  /* out2:  P2 is an output */
 #define OPFLG_OUT3        0x20  /* out3:  P3 is an output */
+#define OPFLG_NCYCLE      0x40  /* ncycle:Cycles count against P1 */
+#define OPFLG_JUMP0       0x80  /* jump0:  P2 might be zero */
 #define OPFLG_INITIALIZER {\
-/*   0 */ 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x01, 0x00,\
-/*   8 */ 0x01, 0x01, 0x01, 0x01, 0x03, 0x03, 0x01, 0x01,\
-/*  16 */ 0x03, 0x03, 0x01, 0x12, 0x01, 0x09, 0x09, 0x09,\
-/*  24 */ 0x09, 0x01, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09,\
-/*  32 */ 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,\
-/*  40 */ 0x01, 0x01, 0x01, 0x26, 0x26, 0x01, 0x23, 0x0b,\
-/*  48 */ 0x01, 0x01, 0x03, 0x03, 0x0b, 0x0b, 0x0b, 0x0b,\
-/*  56 */ 0x0b, 0x0b, 0x01, 0x03, 0x03, 0x03, 0x01, 0x01,\
+/*   0 */ 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x41, 0x00,\
+/*   8 */ 0x81, 0x01, 0x01, 0x81, 0x83, 0x83, 0x01, 0x01,\
+/*  16 */ 0x03, 0x03, 0x01, 0x12, 0x01, 0xc9, 0xc9, 0xc9,\
+/*  24 */ 0xc9, 0x01, 0x49, 0x49, 0x49, 0x49, 0xc9, 0x49,\
+/*  32 */ 0xc1, 0x01, 0x41, 0x41, 0xc1, 0x01, 0x41, 0x41,\
+/*  40 */ 0x41, 0x41, 0x41, 0x26, 0x26, 0x41, 0x23, 0x0b,\
+/*  48 */ 0x81, 0x01, 0x03, 0x03, 0x03, 0x0b, 0x0b, 0x0b,\
+/*  56 */ 0x0b, 0x0b, 0x0b, 0x01, 0x03, 0x03, 0x01, 0x41,\
 /*  64 */ 0x01, 0x00, 0x00, 0x02, 0x02, 0x08, 0x00, 0x10,\
 /*  72 */ 0x10, 0x10, 0x00, 0x10, 0x00, 0x10, 0x10, 0x00,\
 /*  80 */ 0x00, 0x10, 0x10, 0x00, 0x00, 0x00, 0x02, 0x02,\
-/*  88 */ 0x02, 0x00, 0x00, 0x12, 0x1e, 0x20, 0x00, 0x00,\
-/*  96 */ 0x00, 0x00, 0x10, 0x10, 0x00, 0x00, 0x26, 0x26,\
+/*  88 */ 0x02, 0x00, 0x00, 0x12, 0x1e, 0x20, 0x40, 0x00,\
+/*  96 */ 0x00, 0x00, 0x10, 0x10, 0x00, 0x40, 0x40, 0x26,\
 /* 104 */ 0x26, 0x26, 0x26, 0x26, 0x26, 0x26, 0x26, 0x26,\
-/* 112 */ 0x00, 0x00, 0x12, 0x00, 0x00, 0x10, 0x00, 0x00,\
-/* 120 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x10,\
-/* 128 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10,\
-/* 136 */ 0x00, 0x00, 0x04, 0x04, 0x00, 0x00, 0x10, 0x00,\
+/* 112 */ 0x26, 0x00, 0x40, 0x12, 0x40, 0x40, 0x10, 0x00,\
+/* 120 */ 0x00, 0x00, 0x40, 0x00, 0x40, 0x40, 0x10, 0x10,\
+/* 128 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x50,\
+/* 136 */ 0x00, 0x40, 0x04, 0x04, 0x00, 0x40, 0x50, 0x40,\
 /* 144 */ 0x10, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00,\
-/* 152 */ 0x00, 0x10, 0x00, 0x00, 0x06, 0x10, 0x00, 0x04,\
+/* 152 */ 0x00, 0x00, 0x10, 0x00, 0x06, 0x10, 0x00, 0x04,\
 /* 160 */ 0x1a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,\
-/* 168 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00,\
-/* 176 */ 0x00, 0x10, 0x10, 0x02, 0x00, 0x00, 0x00, 0x00,\
-/* 184 */ 0x00, 0x00, 0x00,}
+/* 168 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x10, 0x50,\
+/* 176 */ 0x40, 0x00, 0x10, 0x10, 0x02, 0x12, 0x12, 0x00,\
+/* 184 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,}
 
 /* The resolve3P2Values() routine is able to run faster if it knows
 ** the value of the largest JUMP opcode.  The smaller the maximum

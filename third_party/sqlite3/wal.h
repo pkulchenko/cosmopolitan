@@ -17,7 +17,7 @@
 #ifndef SQLITE_WAL_H
 #define SQLITE_WAL_H
 
-#include "third_party/sqlite3/sqliteInt.h"
+#include "sqliteInt.h"
 
 /* Macros for extracting appropriate sync flags for either transaction
 ** commits (WAL_SYNC_FLAGS(X)) or for checkpoint ops (CKPT_SYNC_FLAGS(X)):
@@ -45,6 +45,7 @@
 # define sqlite3WalFramesize(z)                  0
 # define sqlite3WalFindFrame(x,y,z)              0
 # define sqlite3WalFile(x)                       0
+# undef SQLITE_USE_SEH
 #else
 
 #define WAL_SAVEPOINT_NDATA 4
@@ -149,6 +150,10 @@ sqlite3_file *sqlite3WalFile(Wal *pWal);
 #ifdef SQLITE_ENABLE_SETLK_TIMEOUT
 int sqlite3WalWriteLock(Wal *pWal, int bLock);
 void sqlite3WalDb(Wal *pWal, sqlite3 *db);
+#endif
+
+#ifdef SQLITE_USE_SEH
+int sqlite3WalSystemErrno(Wal*);
 #endif
 
 #endif /* ifndef SQLITE_OMIT_WAL */

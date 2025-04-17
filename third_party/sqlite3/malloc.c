@@ -13,6 +13,7 @@
 ** Memory allocation functions used throughout sqlite.
 */
 #include "third_party/sqlite3/sqliteInt.h"
+#include <stdarg.h>
 
 /*
 ** Attempt to release up to n bytes of non-essential memory currently
@@ -220,6 +221,24 @@ static void sqlite3MallocAlarm(int nByte){
   sqlite3_mutex_enter(mem0.mutex);
 }
 
+#ifdef SQLITE_DEBUG
+/*
+** This routine is called whenever an out-of-memory condition is seen,
+** It's only purpose to to serve as a breakpoint for gdb or similar
+** code debuggers when working on out-of-memory conditions, for example
+** caused by PRAGMA hard_heap_limit=N.
+*/
+static SQLITE_NOINLINE void test_oom_breakpoint(u64 n){
+  static u64 nOomFault = 0;
+  nOomFault += n;
+  /* The assert() is never reached in a human lifetime.  It  is here mostly
+  ** to prevent code optimizers from optimizing out this function. */
+  assert( (nOomFault>>32) < 0xffffffff );
+}
+#else
+# define test_oom_breakpoint(X)   /* No-op for production builds */
+#endif
+
 /*
 ** Do a memory allocation with statistics and alarms.  Assume the
 ** lock is already held.
@@ -246,6 +265,7 @@ static void mallocWithAlarm(int n, void **pp){
       if( mem0.hardLimit ){
         nUsed = sqlite3StatusValue(SQLITE_STATUS_MEMORY_USED);
         if( nUsed >= mem0.hardLimit - nFull ){
+          test_oom_breakpoint(1);
           *pp = 0;
           return;
         }
@@ -278,7 +298,7 @@ static void mallocWithAlarm(int n, void **pp){
 ** The upper bound is slightly less than 2GiB:  0x7ffffeff == 2,147,483,391
 ** This provides a 256-byte safety margin for defense against 32-bit 
 ** signed integer overflow bugs when computing memory allocation sizes.
-** Parnoid applications might want to reduce the maximum allocation size
+** Paranoid applications might want to reduce the maximum allocation size
 ** further for an even larger safety margin.  0x3fffffff or 0x0fffffff
 ** or even smaller would be reasonable upper bounds on the size of a memory
 ** allocations for most applications.
@@ -534,6 +554,7 @@ void *sqlite3Realloc(void *pOld, u64 nBytes){
       sqlite3MallocAlarm(nDiff);
       if( mem0.hardLimit>0 && nUsed >= mem0.hardLimit - nDiff ){
         sqlite3_mutex_leave(mem0.mutex);
+        test_oom_breakpoint(1);
         return 0;
       }
     }
@@ -792,9 +813,14 @@ char *sqlite3DbStrNDup(sqlite3 *db, const char *z, u64 n){
 */
 char *sqlite3DbSpanDup(sqlite3 *db, const char *zStart, const char *zEnd){
   int n;
+#ifdef SQLITE_DEBUG
+  /* Because of the way the parser works, the span is guaranteed to contain
+  ** at least one non-space character */
+  for(n=0; sqlite3Isspace(zStart[n]); n++){ assert( &zStart[n]<zEnd ); }
+#endif
   while( sqlite3Isspace(zStart[0]) ) zStart++;
   n = (int)(zEnd - zStart);
-  while( ALWAYS(n>0) && sqlite3Isspace(zStart[n-1]) ) n--;
+  while( sqlite3Isspace(zStart[n-1]) ) n--;
   return sqlite3DbStrNDup(db, zStart, n);
 }
 
@@ -890,5 +916,5 @@ int sqlite3ApiExit(sqlite3* db, int rc){
   if( db->mallocFailed || rc ){
     return apiHandleError(db, rc);
   }
-  return rc & db->errMask;
+  return 0;
 }

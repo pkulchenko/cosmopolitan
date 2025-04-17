@@ -22,11 +22,11 @@
 */
 #if !defined(SQLITE_CORE) || defined(SQLITE_ENABLE_STMTVTAB)
 #if !defined(SQLITEINT_H)
-#include "third_party/sqlite3/sqlite3ext.h"
+#include "sqlite3ext.h"
 #endif
 SQLITE_EXTENSION_INIT1
-#include "libc/assert.h"
-#include "libc/str/str.h"
+#include <assert.h>
+#include <string.h>
 
 #ifndef SQLITE_OMIT_VIRTUALTABLE
 
@@ -97,6 +97,10 @@ static int stmtConnect(
 #define STMT_COLUMN_MEM    10   /* SQLITE_STMTSTATUS_MEMUSED */
 
 
+  (void)pAux;
+  (void)argc;
+  (void)argv;
+  (void)pzErr;
   rc = sqlite3_declare_vtab(db,
      "CREATE TABLE x(sql,ncol,ro,busy,nscan,nsort,naidx,nstep,"
                     "reprep,run,mem)");
@@ -216,6 +220,10 @@ static int stmtFilter(
   sqlite3_int64 iRowid = 1;
   StmtRow **ppRow = 0;
 
+  (void)idxNum;
+  (void)idxStr;
+  (void)argc;
+  (void)argv;
   stmtCsrReset(pCur);
   ppRow = &pCur->pRow;
   for(p=sqlite3_next_stmt(pCur->db, 0); p; p=sqlite3_next_stmt(pCur->db, p)){
@@ -271,6 +279,7 @@ static int stmtBestIndex(
   sqlite3_vtab *tab,
   sqlite3_index_info *pIdxInfo
 ){
+  (void)tab;
   pIdxInfo->estimatedCost = (double)500;
   pIdxInfo->estimatedRows = 500;
   return SQLITE_OK;
@@ -305,6 +314,7 @@ static sqlite3_module stmtModule = {
   0,                         /* xRelease */
   0,                         /* xRollbackTo */
   0,                         /* xShadowName */
+  0                          /* xIntegrity */
 };
 
 #endif /* SQLITE_OMIT_VIRTUALTABLE */
