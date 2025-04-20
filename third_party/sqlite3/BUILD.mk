@@ -129,6 +129,7 @@ endif
 
 $(THIRD_PARTY_SQLITE3_A_OBJS): private					\
 		CFLAGS +=						\
+			-fportcosmo					\
 			$(THIRD_PARTY_SQLITE3_FLAGS)			\
 			$(THIRD_PARTY_SQLITE3_CPPFLAGS_DEBUG)		\
 
